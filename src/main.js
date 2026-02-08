@@ -404,7 +404,7 @@ function renderNewBetModal() {
 
   return `
     <div class="modal-overlay" id="modalOverlay">
-      <div class="modal" style="position: relative; overflow: hidden;">
+      <div class="modal" id="modalContainer">
         ${overlayContent}
         <div class="modal__header">
           <h2 class="modal__title">🎲 New Bet</h2>

@@ -804,9 +804,16 @@ h4 {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 2000;
   padding: var(--space-md);
   animation: fadeIn 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-start;
+  }
 }
 
 @keyframes fadeIn {
@@ -826,9 +833,21 @@ h4 {
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow-y: hidden;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .modal {
+    max-height: 100vh;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+  }
 }
 
 @keyframes slideUp {
@@ -849,6 +868,7 @@ h4 {
   justify-content: space-between;
   padding: var(--space-lg);
   border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .modal__title {
@@ -879,6 +899,14 @@ h4 {
 
 .modal__form {
   padding: var(--space-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal__body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* ============================================
@@ -1169,6 +1197,7 @@ h4 {
     margin-bottom: var(--space-lg);
   }
 }
+
 /* Modal Overlay Loader & Success */
 .modal-overlay-loader,
 .modal-overlay-success {
@@ -1194,9 +1223,20 @@ h4 {
 }
 
 @keyframes scaleBounce {
-  0% { transform: scale(0); opacity: 0; }
-  60% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .success-text {
@@ -1211,9 +1251,23 @@ h4 {
 
 /* New Bet Animation */
 @keyframes highlightPulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 rgba(0,217,165,0); background: var(--status-active-bg); }
-  50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(0,217,165,0.4); background: var(--status-active-bg); border-color: var(--status-active); }
-  100% { transform: scale(1); box-shadow: 0 0 0 rgba(0,217,165,0); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(0, 217, 165, 0);
+    background: var(--status-active-bg);
+  }
+
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(0, 217, 165, 0.4);
+    background: var(--status-active-bg);
+    border-color: var(--status-active);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(0, 217, 165, 0);
+  }
 }
 
 .animate-new-bet {
@@ -1231,6 +1285,7 @@ h4 {
   border-radius: var(--radius-sm);
   display: none;
 }
+
 .error-message.visible {
   display: block;
   animation: fadeIn 0.3s ease;
