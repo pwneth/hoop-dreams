@@ -126,24 +126,25 @@ export async function fetchBets() {
  */
 function parseBetsFromAPI(data) {
   return data.map((row, index) => {
-    const better1Reward = parseCurrency(row['Better 1 Reward'] || row['Reward 1'] || '');
-    const better2Reward = parseCurrency(row['Better 2 Reward'] || row['Reward 2'] || '');
+    // Column names from the sheet (note lowercase 'bet', 'reward', etc.)
+    const better1Reward = parseCurrency(row['Better 1 reward'] || row['Reward 1'] || '');
+    const better2Reward = parseCurrency(row['Better 2 reward'] || row['Reward 2'] || '');
 
     return {
       id: index,
       date: parseDate(row['Date'] || ''),
       better1: row['Better 1'] || '',
       better2: row['Better 2'] || '',
-      better1Bet: row['Better 1 Bet'] || row['Bet 1'] || '',
-      better2Bet: row['Better 2 Bet'] || row['Bet 2'] || '',
+      better1Bet: row['Better 1 bet'] || row['Bet 1'] || '',
+      better2Bet: row['Better 2 bet'] || row['Bet 2'] || '',
       better1Reward,
       better2Reward,
       winner: row['Winner'] || '',
       status: row['Status'] || '',
-      winnerName: row['Winner Name'] || row['Winner'] || '',
-      amountWon: parseCurrency(row['Amount Won'] || ''),
-      loserName: row['Loser Name'] || '',
-      amountLost: parseCurrency(row['Amount Lost'] || '')
+      winnerName: row['Winner name'] || row['Winner'] || '',
+      amountWon: parseCurrency(row['Amount won'] || ''),
+      loserName: row['Loser name'] || '',
+      amountLost: parseCurrency(row['Amount lost'] || '')
     };
   }).filter(bet => bet.better1 && bet.better2);
 }
