@@ -1485,3 +1485,24 @@ h4 {
     font-size: 1.25rem;
   }
 }
+/* Mobile optimizations for stats grid */
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xs);
+    margin-bottom: var(--space-lg);
+  }
+
+  .stat-card {
+    padding: var(--space-sm);
+  }
+
+  .stat-card__label {
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+  }
+
+  .stat-card__value {
+    font-size: 1.25rem;
+  }
+}
