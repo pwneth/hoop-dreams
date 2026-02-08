@@ -18,6 +18,9 @@ let resolveBetId = null;
 let resolveIsSubmitting = false;
 let confirmingResolution = null; // { id: number, winner: string }
 let confirmingPaymentId = null; // id of bet being confirmed for payment
+let selectedBetter1 = ''; // Track selected better 1 for dynamic labels
+let selectedBetter2 = ''; // Track selected better 2 for dynamic labels
+let customBetters = []; // Track custom betters added by user
 
 // DOM Elements
 const app = document.getElementById('app');
@@ -383,7 +386,9 @@ function renderLoading() {
 function renderNewBetModal() {
   if (!showNewBetModal) return '';
 
-  const memberOptions = LEAGUE_MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('');
+  // Combine league members with any custom betters
+  const allBetters = [...new Set([...LEAGUE_MEMBERS, ...customBetters])];
+  const betterOptions = allBetters.map(m => `<option value="${m}">${m}</option>`).join('');
 
   let overlayContent = '';
   if (isSubmitting) {
@@ -402,6 +407,10 @@ function renderNewBetModal() {
     `;
   }
 
+  // Dynamic labels based on selection
+  const better1Label = selectedBetter1 || 'Better 1';
+  const better2Label = selectedBetter2 || 'Better 2';
+
   return `
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal" id="modalContainer">
@@ -412,41 +421,41 @@ function renderNewBetModal() {
         </div>
         <p id="newBetError" class="error-message" style="margin: 0 var(--space-lg); display: none;"></p>
         <form class="modal__form" id="newBetForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Better 1</label>
-              <select class="form-select" name="better1" required>
-                <option value="">Select member...</option>
-                ${memberOptions}
+          <div class="form-group" style="margin-bottom: var(--space-lg);">
+            <label class="form-label" style="text-align: center; display: block; margin-bottom: var(--space-sm);">Who's Betting?</label>
+            <div style="display: flex; align-items: center; gap: var(--space-md);">
+              <select class="form-select" name="better1" id="better1Select" style="flex: 1;" required>
+                <option value="">Select better...</option>
+                <option value="__new__">+ Add New Better</option>
+                ${betterOptions}
               </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Better 2</label>
-              <select class="form-select" name="better2" required>
-                <option value="">Select member...</option>
-                ${memberOptions}
+              <span style="font-weight: 700; color: var(--text-muted); flex-shrink: 0;">VS</span>
+              <select class="form-select" name="better2" id="better2Select" style="flex: 1;" required>
+                <option value="">Select better...</option>
+                <option value="__new__">+ Add New Better</option>
+                ${betterOptions}
               </select>
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Better 1's Bet</label>
+              <label class="form-label" id="better1BetLabel">${better1Label}'s Bet</label>
               <textarea class="form-textarea" name="better1Bet" placeholder="e.g. Knicks win the championship" required></textarea>
             </div>
             <div class="form-group">
-              <label class="form-label">Better 2's Bet</label>
+              <label class="form-label" id="better2BetLabel">${better2Label}'s Bet</label>
               <textarea class="form-textarea" name="better2Bet" placeholder="e.g. Knicks don't win the championship" required></textarea>
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Better 1 Stakes (€)</label>
+              <label class="form-label" id="better1StakesLabel">${better1Label}'s Stakes (€)</label>
               <input type="number" class="form-input" name="better1Reward" min="1" step="0.01" placeholder="20.00" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Better 2 Stakes (€)</label>
+              <label class="form-label" id="better2StakesLabel">${better2Label}'s Stakes (€)</label>
               <input type="number" class="form-input" name="better2Reward" min="1" step="0.01" placeholder="20.00" required />
             </div>
           </div>
@@ -493,17 +502,56 @@ function render() {
 }
 
 // Handle form submission
+// Helper to update only the labels without full re-render (no flicker)
+function updateLabelsOnly() {
+  const better1Label = selectedBetter1 || 'Better 1';
+  const better2Label = selectedBetter2 || 'Better 2';
+
+  const better1BetLabel = document.getElementById('better1BetLabel');
+  const better2BetLabel = document.getElementById('better2BetLabel');
+  const better1StakesLabel = document.getElementById('better1StakesLabel');
+  const better2StakesLabel = document.getElementById('better2StakesLabel');
+
+  if (better1BetLabel) better1BetLabel.textContent = `${better1Label}'s Bet`;
+  if (better2BetLabel) better2BetLabel.textContent = `${better2Label}'s Bet`;
+  if (better1StakesLabel) better1StakesLabel.textContent = `${better1Label}'s Stakes (€)`;
+  if (better2StakesLabel) better2StakesLabel.textContent = `${better2Label}'s Stakes (€)`;
+}
+
 // Helper to update only the modal without full re-render
 function updateModalOnly() {
   const overlay = document.getElementById('modalOverlay');
   if (overlay) {
+    // Preserve form values before re-render
+    const form = document.getElementById('newBetForm');
+    const formValues = {};
+    if (form) {
+      const formData = new FormData(form);
+      for (const [key, value] of formData.entries()) {
+        formValues[key] = value;
+      }
+    }
+
     overlay.outerHTML = renderNewBetModal();
+
+    // Restore form values after re-render
+    const newForm = document.getElementById('newBetForm');
+    if (newForm) {
+      Object.entries(formValues).forEach(([key, value]) => {
+        const el = newForm.elements[key];
+        if (el && value) {
+          el.value = value;
+        }
+      });
+    }
 
     // Re-attach listeners
     const closeModalBtn = document.getElementById('closeModalBtn');
     if (closeModalBtn) {
       closeModalBtn.addEventListener('click', () => {
         showNewBetModal = false;
+        selectedBetter1 = '';
+        selectedBetter2 = '';
         render();
       });
     }
@@ -512,13 +560,14 @@ function updateModalOnly() {
     if (cancelBetBtn) {
       cancelBetBtn.addEventListener('click', () => {
         showNewBetModal = false;
+        selectedBetter1 = '';
+        selectedBetter2 = '';
         render();
       });
     }
 
-    const newBetForm = document.getElementById('newBetForm');
-    if (newBetForm) {
-      newBetForm.addEventListener('submit', handleNewBetSubmit);
+    if (newForm) {
+      newForm.addEventListener('submit', handleNewBetSubmit);
     }
 
     const newOverlay = document.getElementById('modalOverlay');
@@ -526,7 +575,59 @@ function updateModalOnly() {
       newOverlay.addEventListener('click', (e) => {
         if (e.target === newOverlay) {
           showNewBetModal = false;
+          selectedBetter1 = '';
+          selectedBetter2 = '';
           render();
+        }
+      });
+    }
+
+    // Attach better selection handlers
+    const better1Select = document.getElementById('better1Select');
+    const better2Select = document.getElementById('better2Select');
+
+    if (better1Select) {
+      better1Select.addEventListener('change', (e) => {
+        if (e.target.value === '__new__') {
+          const newName = prompt('Enter new better name:');
+          if (newName && newName.trim()) {
+            const trimmedName = newName.trim();
+            if (!customBetters.includes(trimmedName)) {
+              customBetters.push(trimmedName);
+            }
+            selectedBetter1 = trimmedName;
+            updateModalOnly();
+            const select = document.getElementById('better1Select');
+            if (select) select.value = trimmedName;
+          } else {
+            e.target.value = selectedBetter1 || '';
+          }
+        } else {
+          selectedBetter1 = e.target.value;
+          updateLabelsOnly();
+        }
+      });
+    }
+
+    if (better2Select) {
+      better2Select.addEventListener('change', (e) => {
+        if (e.target.value === '__new__') {
+          const newName = prompt('Enter new better name:');
+          if (newName && newName.trim()) {
+            const trimmedName = newName.trim();
+            if (!customBetters.includes(trimmedName)) {
+              customBetters.push(trimmedName);
+            }
+            selectedBetter2 = trimmedName;
+            updateModalOnly();
+            const select = document.getElementById('better2Select');
+            if (select) select.value = trimmedName;
+          } else {
+            e.target.value = selectedBetter2 || '';
+          }
+        } else {
+          selectedBetter2 = e.target.value;
+          updateLabelsOnly();
         }
       });
     }
@@ -554,7 +655,7 @@ async function handleNewBetSubmit(e) {
   // Validate different bettors
   if (betData.better1 === betData.better2) {
     if (errorEl) {
-      errorEl.textContent = 'Please select two different members for the bet!';
+      errorEl.textContent = 'Please select two different betters for the bet!';
       errorEl.style.display = 'block';
     }
     return;
@@ -654,6 +755,8 @@ function attachEventListeners() {
   if (newBetBtn) {
     newBetBtn.addEventListener('click', () => {
       showNewBetModal = true;
+      selectedBetter1 = '';
+      selectedBetter2 = '';
       render();
     });
   }
@@ -663,6 +766,8 @@ function attachEventListeners() {
   if (dashNewBetBtn) {
     dashNewBetBtn.addEventListener('click', () => {
       showNewBetModal = true;
+      selectedBetter1 = '';
+      selectedBetter2 = '';
       render();
     });
   }
@@ -680,10 +785,14 @@ function attachEventListeners() {
   const cancelBetBtn = document.getElementById('cancelBetBtn');
   const modalOverlay = document.getElementById('modalOverlay');
   const newBetForm = document.getElementById('newBetForm');
+  const better1Select = document.getElementById('better1Select');
+  const better2Select = document.getElementById('better2Select');
 
   if (closeModalBtn) {
     closeModalBtn.addEventListener('click', () => {
       showNewBetModal = false;
+      selectedBetter1 = '';
+      selectedBetter2 = '';
       render();
     });
   }
@@ -691,6 +800,8 @@ function attachEventListeners() {
   if (cancelBetBtn) {
     cancelBetBtn.addEventListener('click', () => {
       showNewBetModal = false;
+      selectedBetter1 = '';
+      selectedBetter2 = '';
       render();
     });
   }
@@ -699,6 +810,8 @@ function attachEventListeners() {
     modalOverlay.addEventListener('click', (e) => {
       if (e.target === modalOverlay) {
         showNewBetModal = false;
+        selectedBetter1 = '';
+        selectedBetter2 = '';
         render();
       }
     });
@@ -706,6 +819,57 @@ function attachEventListeners() {
 
   if (newBetForm) {
     newBetForm.addEventListener('submit', handleNewBetSubmit);
+  }
+
+  // Handle better selection changes
+  if (better1Select) {
+    better1Select.addEventListener('change', (e) => {
+      if (e.target.value === '__new__') {
+        const newName = prompt('Enter new better name:');
+        if (newName && newName.trim()) {
+          const trimmedName = newName.trim();
+          if (!customBetters.includes(trimmedName)) {
+            customBetters.push(trimmedName);
+          }
+          selectedBetter1 = trimmedName;
+          // Need full re-render to add new option to dropdown
+          updateModalOnly();
+          const select = document.getElementById('better1Select');
+          if (select) select.value = trimmedName;
+        } else {
+          e.target.value = selectedBetter1 || '';
+        }
+      } else {
+        selectedBetter1 = e.target.value;
+        // Just update labels, no re-render needed
+        updateLabelsOnly();
+      }
+    });
+  }
+
+  if (better2Select) {
+    better2Select.addEventListener('change', (e) => {
+      if (e.target.value === '__new__') {
+        const newName = prompt('Enter new better name:');
+        if (newName && newName.trim()) {
+          const trimmedName = newName.trim();
+          if (!customBetters.includes(trimmedName)) {
+            customBetters.push(trimmedName);
+          }
+          selectedBetter2 = trimmedName;
+          // Need full re-render to add new option to dropdown
+          updateModalOnly();
+          const select = document.getElementById('better2Select');
+          if (select) select.value = trimmedName;
+        } else {
+          e.target.value = selectedBetter2 || '';
+        }
+      } else {
+        selectedBetter2 = e.target.value;
+        // Just update labels, no re-render needed
+        updateLabelsOnly();
+      }
+    });
   }
 
   // Logout handler
