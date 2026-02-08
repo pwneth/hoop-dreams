@@ -216,8 +216,10 @@ function parseCSV(text) {
  * Parse currency string to number
  */
 function parseCurrency(value) {
-  if (!value) return 0;
-  const cleaned = value.replace(/[€$,]/g, '').trim();
+  if (!value && value !== 0) return 0;
+  // Convert to string in case API returns a number
+  const strValue = String(value);
+  const cleaned = strValue.replace(/[€$,]/g, '').trim();
   return parseFloat(cleaned) || 0;
 }
 
@@ -226,9 +228,11 @@ function parseCurrency(value) {
  */
 function parseDate(dateStr) {
   if (!dateStr) return null;
+  // Convert to string in case API returns a different type
+  const strDate = String(dateStr);
 
   // Handle format: DD-MMM-YYYY (e.g., "18-Sep-2025")
-  const parts = dateStr.split('-');
+  const parts = strDate.split('-');
   if (parts.length === 3) {
     const months = {
       'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
