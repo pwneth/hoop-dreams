@@ -1,5 +1,5 @@
 import './style.css';
-import { fetchBets, calculateMemberStats, calculateOverallStats, createBet, LEAGUE_MEMBERS, verifyPassword, setPassword, getPassword } from './api.js';
+import { fetchBets, calculateMemberStats, calculateOverallStats, createBet, updateBet, markBetAsPaid, LEAGUE_MEMBERS, verifyPassword, setPassword, getPassword } from './api.js';
 
 // Auth State - check if we have a stored password
 let isAuthenticated = !!getPassword();
@@ -12,6 +12,12 @@ let overallStats = {};
 let statusFilter = 'all';
 let showNewBetModal = false;
 let isSubmitting = false;
+let submitSuccess = false;
+let showResolveModal = false;
+let resolveBetId = null;
+let resolveIsSubmitting = false;
+let confirmingResolution = null; // { id: number, winner: string }
+let confirmingPaymentId = null; // id of bet being confirmed for payment
 
 // DOM Elements
 const app = document.getElementById('app');
@@ -194,6 +200,40 @@ function renderBetCard(bet) {
           <div class="bet-card__stake">${formatCurrency(bet.better2Reward)}</div>
         </div>
       </div>
+      ${isAuthenticated && bet.status !== 'paid' ? `
+        <div style="margin-top: var(--space-md); border-top: 1px solid var(--glass-border); padding-top: 20px; padding-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-md);">
+          ${resolveIsSubmitting && resolveBetId == bet.id ? `
+            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+              <div class="loading__spinner loading__spinner--sm"></div>
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Updating...</span>
+            </div>
+          ` : (bet.status === 'pending' ? `
+            ${confirmingPaymentId == bet.id ? `
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Confirm payment received?</span>
+              <div style="display: flex; gap: var(--space-xs);">
+                <button class="btn btn--xs btn--success confirm-payment-btn">Yes</button>
+                <button class="btn btn--xs btn--outline cancel-payment-btn">Cancel</button>
+              </div>
+            ` : `
+              <button class="btn btn--xs btn--primary resolve-payment-btn" data-id="${bet.id}">Resolve Payment</button>
+            `}
+          ` : (confirmingResolution && confirmingResolution.id == bet.id ? `
+            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+              Confirm <b>${bet[confirmingResolution.winner]}</b> won?
+            </span>
+            <div style="display: flex; gap: var(--space-xs);">
+              <button class="btn btn--xs btn--primary confirm-resolve-btn">Yes</button>
+              <button class="btn btn--xs btn--outline cancel-resolve-btn">Cancel</button>
+            </div>
+          ` : `
+            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Resolve Winner:</span>
+            <div style="display: flex; gap: var(--space-xs);">
+              <button class="btn btn--xs btn--outline resolve-winner-btn" data-id="${bet.id}" data-winner="better1">${bet.better1}</button>
+              <button class="btn btn--xs btn--outline resolve-winner-btn" data-id="${bet.id}" data-winner="better2">${bet.better2}</button>
+            </div>
+          `))}
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -345,13 +385,32 @@ function renderNewBetModal() {
 
   const memberOptions = LEAGUE_MEMBERS.map(m => `<option value="${m}">${m}</option>`).join('');
 
+  let overlayContent = '';
+  if (isSubmitting) {
+    overlayContent = `
+      <div class="modal-overlay-loader">
+        <div class="loading__spinner"></div>
+        <p style="margin-top: var(--space-md);">Saving bet...</p>
+      </div>
+    `;
+  } else if (submitSuccess) {
+    overlayContent = `
+      <div class="modal-overlay-success">
+        <div class="success-icon">✓</div>
+        <p class="success-text">Bet Placed Successfully!</p>
+      </div>
+    `;
+  }
+
   return `
     <div class="modal-overlay" id="modalOverlay">
-      <div class="modal">
+      <div class="modal" style="position: relative; overflow: hidden;">
+        ${overlayContent}
         <div class="modal__header">
           <h2 class="modal__title">🎲 New Bet</h2>
           <button class="modal__close" id="closeModalBtn">&times;</button>
         </div>
+        <p id="newBetError" class="error-message" style="margin: 0 var(--space-lg); display: none;"></p>
         <form class="modal__form" id="newBetForm">
           <div class="form-row">
             <div class="form-group">
@@ -426,6 +485,7 @@ function render() {
       ${mainContent}
     </main>
     ${renderNewBetModal()}
+    ${renderResolveModal()}
   `;
 
   // Attach event listeners
@@ -433,6 +493,47 @@ function render() {
 }
 
 // Handle form submission
+// Helper to update only the modal without full re-render
+function updateModalOnly() {
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay) {
+    overlay.outerHTML = renderNewBetModal();
+
+    // Re-attach listeners
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    if (closeModalBtn) {
+      closeModalBtn.addEventListener('click', () => {
+        showNewBetModal = false;
+        render();
+      });
+    }
+
+    const cancelBetBtn = document.getElementById('cancelBetBtn');
+    if (cancelBetBtn) {
+      cancelBetBtn.addEventListener('click', () => {
+        showNewBetModal = false;
+        render();
+      });
+    }
+
+    const newBetForm = document.getElementById('newBetForm');
+    if (newBetForm) {
+      newBetForm.addEventListener('submit', handleNewBetSubmit);
+    }
+
+    const newOverlay = document.getElementById('modalOverlay');
+    if (newOverlay) {
+      newOverlay.addEventListener('click', (e) => {
+        if (e.target === newOverlay) {
+          showNewBetModal = false;
+          render();
+        }
+      });
+    }
+  }
+}
+
+// Handle New Bet Submission
 async function handleNewBetSubmit(e) {
   e.preventDefault();
 
@@ -446,19 +547,35 @@ async function handleNewBetSubmit(e) {
     better2Reward: parseFloat(formData.get('better2Reward'))
   };
 
+  // Clear previous errors
+  const errorEl = document.getElementById('newBetError');
+  if (errorEl) errorEl.style.display = 'none';
+
   // Validate different bettors
   if (betData.better1 === betData.better2) {
-    alert('Please select two different members for the bet!');
+    if (errorEl) {
+      errorEl.textContent = 'Please select two different members for the bet!';
+      errorEl.style.display = 'block';
+    }
     return;
   }
 
   isSubmitting = true;
-  render();
+  updateModalOnly(); // Prevent flickering by updating only modal
 
   try {
     await createBet(betData);
-    showNewBetModal = false;
+
+    // Show success animation
     isSubmitting = false;
+    submitSuccess = true;
+    updateModalOnly(); // Update only modal
+
+    // Wait for animation
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    submitSuccess = false;
+    showNewBetModal = false;
 
     // Refresh bets
     bets = await fetchBets();
@@ -466,10 +583,20 @@ async function handleNewBetSubmit(e) {
     overallStats = calculateOverallStats(bets);
     render();
 
+    // Animate the new bet (first one)
+    const newBetCard = document.querySelector('.bet-card');
+    if (newBetCard) {
+      newBetCard.classList.add('animate-new-bet');
+    }
+
   } catch (error) {
     isSubmitting = false;
-    alert('Failed to create bet: ' + error.message);
-    render();
+    updateModalOnly(); // Reset modal state
+    const errorEl = document.getElementById('newBetError');
+    if (errorEl) {
+      errorEl.textContent = 'Failed to create bet: ' + error.message;
+      errorEl.style.display = 'block';
+    }
   }
 }
 
@@ -671,6 +798,172 @@ async function init() {
       </main>
     `;
   }
+}
+
+// Start the app
+// Render Resolve Modal
+function renderResolveModal() {
+  if (!showResolveModal) return '';
+
+  const bet = bets.find(b => b.id == resolveBetId);
+  if (!bet) return '';
+
+  return `
+    <div class="modal-overlay" id="resolveOverlay">
+      <div class="modal">
+        <div class="modal__header">
+          <h2 class="modal__title">Resolve Bet</h2>
+          <button class="modal__close" id="closeResolveBtn">&times;</button>
+        </div>
+        <div class="modal__body">
+          <p style="margin-bottom: var(--space-md); color: var(--text-muted);">Who won this bet?</p>
+          
+          <div class="bet-card" style="margin-bottom: var(--space-lg); border: 1px solid var(--border-color);">
+            <div class="bet-card__bettor">${bet.better1} vs ${bet.better2}</div>
+            <div class="bet-card__bet">${bet.better1Bet} vs ${bet.better2Bet}</div>
+          </div>
+
+          ${resolveIsSubmitting ? `
+            <div class="loading">
+                <div class="loading__spinner"></div>
+                <p>Updating...</p>
+            </div>
+          ` : `
+          <div class="resolve-actions" style="display: grid; gap: var(--space-md); grid-template-columns: 1fr 1fr;">
+            <button class="btn btn--outline resolve-winner-btn" data-winner="better1" style="height: auto; padding: 1rem;">
+              <span style="display: block; font-weight: bold; margin-bottom: 0.25rem;">${bet.better1}</span>
+              <span style="font-size: 0.8rem; opacity: 0.8;">Won ${formatCurrency(bet.better1Reward)}</span>
+            </button>
+            <button class="btn btn--outline resolve-winner-btn" data-winner="better2" style="height: auto; padding: 1rem;">
+              <span style="display: block; font-weight: bold; margin-bottom: 0.25rem;">${bet.better2}</span>
+              <span style="font-size: 0.8rem; opacity: 0.8;">Won ${formatCurrency(bet.better2Reward)}</span>
+            </button>
+          </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Handle Resolve Bet
+async function handleResolveBet(winnerKey) {
+  if (!resolveBetId && resolveBetId !== 0) return;
+
+  resolveIsSubmitting = true;
+  render();
+
+  try {
+    // Convert internal key to Sheet value (Title Case)
+    const sheetValue = winnerKey === 'better1' ? 'Better 1' : 'Better 2';
+    await updateBet(resolveBetId, sheetValue);
+
+    // Close and refresh
+    showResolveModal = false;
+    resolveBetId = null;
+    resolveIsSubmitting = false;
+
+    // Refresh
+    bets = await fetchBets();
+    memberStats = calculateMemberStats(bets);
+    overallStats = calculateOverallStats(bets);
+    render();
+
+  } catch (error) {
+    resolveIsSubmitting = false;
+    alert('Failed to update bet: ' + error.message);
+    render();
+  }
+}
+
+// Handle Resolve Payment
+async function handleResolvePayment(betId) {
+  resolveBetId = betId;
+  resolveIsSubmitting = true;
+  render();
+
+  try {
+    await markBetAsPaid(betId);
+
+    resolveBetId = null;
+    resolveIsSubmitting = false;
+
+    // Refresh
+    bets = await fetchBets();
+    memberStats = calculateMemberStats(bets);
+    overallStats = calculateOverallStats(bets);
+    render();
+
+  } catch (error) {
+    resolveIsSubmitting = false;
+    alert('Failed to mark as paid: ' + error.message);
+    render();
+  }
+}
+
+// Global Event Delegation (Singleton to prevent duplicates)
+if (app) {
+
+  app.onclick = (e) => {
+    // Open Modal
+    if (e.target.matches('.resolve-btn')) {
+      resolveBetId = e.target.dataset.id;
+      showResolveModal = true;
+      render();
+    }
+
+    // Close Modal
+    if (e.target.matches('#closeResolveBtn') || e.target === document.getElementById('resolveOverlay')) {
+      showResolveModal = false;
+      render();
+    }
+
+    // Select Winner (Trigger Inline Confirmation)
+    const winnerBtn = e.target.closest('.resolve-winner-btn');
+    if (winnerBtn) {
+      const winner = winnerBtn.dataset.winner;
+      const betId = winnerBtn.dataset.id;
+      confirmingResolution = { id: betId, winner: winner };
+      render();
+    }
+
+    // Confirm Resolution Action
+    if (e.target.matches('.confirm-resolve-btn')) {
+      if (confirmingResolution) {
+        resolveBetId = confirmingResolution.id;
+        const winner = confirmingResolution.winner;
+        confirmingResolution = null;
+        handleResolveBet(winner);
+      }
+    }
+
+    // Cancel Resolution Action
+    if (e.target.matches('.cancel-resolve-btn')) {
+      confirmingResolution = null;
+      render();
+    }
+
+    // Resolve Payment (Initial Click)
+    if (e.target.matches('.resolve-payment-btn')) {
+      confirmingPaymentId = e.target.dataset.id;
+      render();
+    }
+
+    // Confirm Payment Action
+    if (e.target.matches('.confirm-payment-btn')) {
+      if (confirmingPaymentId) {
+        const betId = confirmingPaymentId;
+        confirmingPaymentId = null;
+        handleResolvePayment(betId);
+      }
+    }
+
+    // Cancel Payment Action
+    if (e.target.matches('.cancel-payment-btn')) {
+      confirmingPaymentId = null;
+      render();
+    }
+  };
 }
 
 // Start the app

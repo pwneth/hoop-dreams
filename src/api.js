@@ -1,7 +1,7 @@
 // Google Apps Script Web App URL
 // IMPORTANT: Replace this URL after deploying the Apps Script
 // See /google-apps-script/Code.gs for deployment instructions
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymbwZ6O1TC9JwqS561ryv3u1uAYSglllRfySUEGrExEtD37nzAklV50Bq5IQk_NPuu/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwE2F_ulPHsvCxSRrGje-vh69uek5XXWr_EGoav2O22GSjRAziaWETtfbGdkkbE5l5p/exec';
 
 // Known league members
 export const LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
@@ -116,7 +116,7 @@ export async function fetchBets() {
     if (response.ok) {
       const result = await response.json();
       if (result.success && result.data) {
-        return parseBetsFromAPI(result.data);
+        return parseBetsFromAPI(result.data).reverse();
       } else {
         throw new Error(result.error || 'Failed to fetch bets');
       }
@@ -395,4 +395,69 @@ export function calculateOverallStats(bets) {
     pendingBets,
     totalVolume: totalVolume / 2 // Divide by 2 since we added both sides
   };
+}
+
+/**
+ * Update bet status (Active -> Paid)
+ * @param {number} betId - The row index of the bet
+ * @param {string} winner - 'better1' or 'better2'
+ */
+export async function updateBet(betId, winner) {
+  if (!currentPassword) {
+    throw new Error('Not authenticated');
+  }
+
+  const params = new URLSearchParams({
+    action: 'updateBet',
+    password: currentPassword,
+    rowId: betId,
+    winner: winner
+  });
+
+  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+    if (!response.ok) throw new Error('Network error');
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to update bet');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error updating bet:', error);
+    throw error;
+  }
+}
+
+/**
+ * Mark a bet as paid in Apps Script
+ */
+export async function markBetAsPaid(betId) {
+  if (!currentPassword) {
+    throw new Error('Not authenticated');
+  }
+
+  const params = new URLSearchParams({
+    action: 'markPaid',
+    password: currentPassword,
+    rowId: betId
+  });
+
+  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+    if (!response.ok) throw new Error('Network error');
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to mark bet as paid');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error marking bet as paid:', error);
+    throw error;
+  }
 }
