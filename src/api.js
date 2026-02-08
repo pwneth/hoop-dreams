@@ -7,7 +7,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwE2F_ulPHsvCxS
 export const LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
 
 // Storage key for password
-const PASSWORD_STORAGE_KEY = 'hoop_dreams_auth';
+const PASSWORD_STORAGE_KEY = 'hd_bets_auth';
 
 // Store password - load from localStorage on init
 let currentPassword = localStorage.getItem(PASSWORD_STORAGE_KEY) || '';
