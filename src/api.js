@@ -47,7 +47,7 @@ export async function verifyPassword(password) {
     if (response.ok) {
       const result = await response.json();
       if (result.success) {
-        currentPassword = password;
+        setPassword(password); // Use setPassword to persist to localStorage
         return true;
       }
     }
