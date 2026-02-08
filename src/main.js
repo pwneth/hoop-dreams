@@ -1,8 +1,8 @@
 import './style.css';
-import { fetchBets, calculateMemberStats, calculateOverallStats, createBet, LEAGUE_MEMBERS, verifyPassword, setPassword } from './api.js';
+import { fetchBets, calculateMemberStats, calculateOverallStats, createBet, LEAGUE_MEMBERS, verifyPassword, setPassword, getPassword } from './api.js';
 
-// Auth State (password is stored in api.js currentPassword)
-let isAuthenticated = false;
+// Auth State - check if we have a stored password
+let isAuthenticated = !!getPassword();
 
 // App State
 let currentView = 'dashboard';

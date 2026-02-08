@@ -6,14 +6,22 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymbwZ6O1TC9Jwq
 // Known league members
 export const LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
 
-// Store password in memory (not persisted - user must re-enter after page reload)
-let currentPassword = '';
+// Storage key for password
+const PASSWORD_STORAGE_KEY = 'hoop_dreams_auth';
+
+// Store password - load from localStorage on init
+let currentPassword = localStorage.getItem(PASSWORD_STORAGE_KEY) || '';
 
 /**
- * Set the current password for API requests
+ * Set the current password for API requests (and persist to localStorage)
  */
 export function setPassword(password) {
   currentPassword = password;
+  if (password) {
+    localStorage.setItem(PASSWORD_STORAGE_KEY, password);
+  } else {
+    localStorage.removeItem(PASSWORD_STORAGE_KEY);
+  }
 }
 
 /**
