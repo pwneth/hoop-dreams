@@ -10,6 +10,7 @@ let bets = [];
 let memberStats = [];
 let overallStats = {};
 let statusFilter = 'all';
+let bettorFilter = 'all'; // Filter bets by bettor name
 let showNewBetModal = false;
 let isSubmitting = false;
 let submitSuccess = false;
@@ -21,6 +22,24 @@ let confirmingPaymentId = null; // id of bet being confirmed for payment
 let selectedBetter1 = ''; // Track selected better 1 for dynamic labels
 let selectedBetter2 = ''; // Track selected better 2 for dynamic labels
 let customBetters = []; // Track custom betters added by user
+
+// Theme State
+const THEME_STORAGE_KEY = 'hd_bets_theme';
+let isDarkMode = localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
+
+// Apply theme on load
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+}
+applyTheme();
+
+// Toggle theme function
+function toggleTheme() {
+  isDarkMode = !isDarkMode;
+  localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
+  applyTheme();
+  render();
+}
 
 // DOM Elements
 const app = document.getElementById('app');
@@ -68,6 +87,9 @@ function renderHeader() {
           </button>
           <button class="nav-btn nav-btn--primary" id="newBetBtn">
             + New Bet
+          </button>
+          <button class="nav-btn" id="themeToggleBtn" title="Toggle theme" style="font-size: 1.25rem; padding: 0.5rem;">
+            ${isDarkMode ? '☀️' : '🌙'}
           </button>
           <button class="nav-btn" id="logoutBtn" title="Logout" style="color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
             Logout ➜
@@ -243,21 +265,87 @@ function renderBetCard(bet) {
 
 // Render Filters
 function renderFilters() {
+  // Get unique bettors from all bets
+  const allBettors = [...new Set(bets.flatMap(b => [b.better1, b.better2]))].filter(b => b !== 'Pot').sort();
+  const bettorOptions = allBettors.map(b => `<option value="${b}" ${bettorFilter === b ? 'selected' : ''}>${b}</option>`).join('');
+
+  // Calculate bettor stats if a specific bettor is selected
+  let bettorStatsHtml = '';
+  if (bettorFilter !== 'all') {
+    const bettorBets = bets.filter(b => b.better1 === bettorFilter || b.better2 === bettorFilter);
+    const totalBets = bettorBets.length;
+    let wins = 0;
+    let losses = 0;
+    let moneyWon = 0;
+    let moneyLost = 0;
+
+    bettorBets.forEach(bet => {
+      // winnerName contains the actual name, winner contains 'better1' or 'better2'
+      if (bet.winnerName) {
+        if (bet.winnerName === bettorFilter) {
+          wins++;
+          moneyWon += bet.amountWon || 0;
+        } else if (bet.loserName === bettorFilter) {
+          losses++;
+          moneyLost += bet.amountLost || 0;
+        }
+      }
+    });
+
+    const netMoney = moneyWon - moneyLost;
+    const netClass = netMoney >= 0 ? 'positive' : 'negative';
+    const netSign = netMoney >= 0 ? '+' : '';
+
+    bettorStatsHtml = `
+      <div class="bettor-stats">
+        <div class="bettor-stats__item">
+          <span class="bettor-stats__label">Total Bets</span>
+          <span class="bettor-stats__value">${totalBets}</span>
+        </div>
+        <div class="bettor-stats__item">
+          <span class="bettor-stats__label">Won</span>
+          <span class="bettor-stats__value" style="color: var(--status-active);">${wins}</span>
+        </div>
+        <div class="bettor-stats__item">
+          <span class="bettor-stats__label">Lost</span>
+          <span class="bettor-stats__value" style="color: var(--status-pending);">${losses}</span>
+        </div>
+        <div class="bettor-stats__item">
+          <span class="bettor-stats__label">Net</span>
+          <span class="bettor-stats__value bettor-stats__value--${netClass}">${netSign}€${netMoney.toFixed(2)}</span>
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <div class="filters">
       <button class="filter-btn ${statusFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
       <button class="filter-btn ${statusFilter === 'active' ? 'active' : ''}" data-filter="active">🟢 Active</button>
       <button class="filter-btn ${statusFilter === 'paid' ? 'active' : ''}" data-filter="paid">✅ Paid</button>
       <button class="filter-btn ${statusFilter === 'pending' ? 'active' : ''}" data-filter="pending">⏳ Pending</button>
+      <select class="form-select" id="bettorFilterSelect" style="min-width: 150px;">
+        <option value="all" ${bettorFilter === 'all' ? 'selected' : ''}>All Bettors</option>
+        ${bettorOptions}
+      </select>
     </div>
+    ${bettorStatsHtml}
   `;
 }
 
 // Render Bets List
 function renderBetsList() {
-  const filteredBets = statusFilter === 'all'
-    ? bets
-    : bets.filter(b => b.status === statusFilter);
+  let filteredBets = bets;
+
+  // Apply status filter
+  if (statusFilter !== 'all') {
+    filteredBets = filteredBets.filter(b => b.status === statusFilter);
+  }
+
+  // Apply bettor filter
+  if (bettorFilter !== 'all') {
+    filteredBets = filteredBets.filter(b => b.better1 === bettorFilter || b.better2 === bettorFilter);
+  }
 
   if (filteredBets.length === 0) {
     return `
@@ -387,7 +475,7 @@ function renderNewBetModal() {
   if (!showNewBetModal) return '';
 
   // Combine league members with any custom betters
-  const allBetters = [...new Set([...LEAGUE_MEMBERS, ...customBetters])];
+  const allBetters = [...new Set([...LEAGUE_MEMBERS, ...customBetters])].filter(b => b !== 'Pot');
   const betterOptions = allBetters.map(m => `<option value="${m}">${m}</option>`).join('');
 
   let overlayContent = '';
@@ -408,8 +496,8 @@ function renderNewBetModal() {
   }
 
   // Dynamic labels based on selection
-  const better1Label = selectedBetter1 || 'Better 1';
-  const better2Label = selectedBetter2 || 'Better 2';
+  const better1Label = selectedBetter1 || 'Bettor 1';
+  const better2Label = selectedBetter2 || 'Bettor 2';
 
   return `
     <div class="modal-overlay" id="modalOverlay">
@@ -423,7 +511,7 @@ function renderNewBetModal() {
         <form class="modal__form" id="newBetForm">
           <div class="form-group" style="margin-bottom: var(--space-lg);">
             <label class="form-label" style="text-align: center; display: block; margin-bottom: var(--space-sm);">Who's Betting?</label>
-            <div style="display: flex; align-items: center; gap: var(--space-md);">
+            <div class="betters-row" style="display: flex; align-items: center; gap: var(--space-md);">
               <select class="form-select" name="better1" id="better1Select" style="flex: 1;" required>
                 <option value="">Select better...</option>
                 <option value="__new__">+ Add New Better</option>
@@ -504,8 +592,8 @@ function render() {
 // Handle form submission
 // Helper to update only the labels without full re-render (no flicker)
 function updateLabelsOnly() {
-  const better1Label = selectedBetter1 || 'Better 1';
-  const better2Label = selectedBetter2 || 'Better 2';
+  const better1Label = selectedBetter1 || 'Bettor 1';
+  const better2Label = selectedBetter2 || 'Bettor 2';
 
   const better1BetLabel = document.getElementById('better1BetLabel');
   const better2BetLabel = document.getElementById('better2BetLabel');
@@ -750,6 +838,15 @@ function attachEventListeners() {
     });
   });
 
+  // Bettor Filter
+  const bettorFilterSelect = document.getElementById('bettorFilterSelect');
+  if (bettorFilterSelect) {
+    bettorFilterSelect.addEventListener('change', (e) => {
+      bettorFilter = e.target.value;
+      render();
+    });
+  }
+
   // New Bet Button
   const newBetBtn = document.getElementById('newBetBtn');
   if (newBetBtn) {
@@ -876,6 +973,12 @@ function attachEventListeners() {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', handleLogout);
+  }
+
+  // Theme toggle handler
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', toggleTheme);
   }
 }
 
