@@ -70,8 +70,8 @@ function renderHeader() {
     <header class="header">
       <div class="header__inner">
         <div class="header__brand">
-          <span class="header__logo">🎲</span>
-          <span class="header__title">HD Bets</span>
+          <img src="header_logo.png" class="header__logo-img" alt="HD Bets" />
+          <span class="header__title">HD Bets!</span>
         </div>
         <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">☰</button>
         
@@ -133,8 +133,8 @@ function renderLoginScreen() {
     <div class="login-container">
       <div class="login-card">
         <div class="login-card__header">
-          <span class="login-card__logo">🎲</span>
-          <h1 class="login-card__title">HD Bets</h1>
+          <img src="header_logo.png" class="login-card__logo-img" alt="HD Bets" />
+          <h1 class="login-card__title">HD Bets!</h1>
           <p class="login-card__subtitle">Fantasy Basketball Betting</p>
         </div>
         <form class="login-form" id="loginForm">
@@ -146,7 +146,7 @@ function renderLoginScreen() {
             Invalid password
           </div>
           <button type="submit" class="btn btn--primary btn--full">
-            🎲 Enter the Game
+            Login
           </button>
         </form>
       </div>
@@ -193,7 +193,7 @@ function renderLeaderboard() {
     const profitSign = member.netProfit > 0 ? '+' : '';
 
     return `
-      <div class="leaderboard__item">
+      <div class="leaderboard__item" data-bettor="${member.name}" role="button" tabindex="0">
         <div class="leaderboard__rank ${rankClass}">${rank}</div>
         <div class="leaderboard__name">${member.name}</div>
         <div class="leaderboard__stats">${member.wins}W - ${member.losses}L (${member.winRate}%)</div>
@@ -296,55 +296,6 @@ function renderFilters() {
   const allBettors = [...new Set(bets.flatMap(b => [b.better1, b.better2]))].filter(b => b !== 'Pot').sort();
   const bettorOptions = allBettors.map(b => `<option value="${b}" ${bettorFilter === b ? 'selected' : ''}>${b}</option>`).join('');
 
-  // Calculate bettor stats if a specific bettor is selected
-  let bettorStatsHtml = '';
-  if (bettorFilter !== 'all') {
-    const bettorBets = bets.filter(b => b.better1 === bettorFilter || b.better2 === bettorFilter);
-    const totalBets = bettorBets.length;
-    let wins = 0;
-    let losses = 0;
-    let moneyWon = 0;
-    let moneyLost = 0;
-
-    bettorBets.forEach(bet => {
-      // winnerName contains the actual name, winner contains 'better1' or 'better2'
-      if (bet.winnerName) {
-        if (bet.winnerName === bettorFilter) {
-          wins++;
-          moneyWon += bet.amountWon || 0;
-        } else if (bet.loserName === bettorFilter) {
-          losses++;
-          moneyLost += bet.amountLost || 0;
-        }
-      }
-    });
-
-    const netMoney = moneyWon - moneyLost;
-    const netClass = netMoney >= 0 ? 'positive' : 'negative';
-    const netSign = netMoney >= 0 ? '+' : '';
-
-    bettorStatsHtml = `
-      <div class="bettor-stats">
-        <div class="bettor-stats__item">
-          <span class="bettor-stats__label">Total Bets</span>
-          <span class="bettor-stats__value">${totalBets}</span>
-        </div>
-        <div class="bettor-stats__item">
-          <span class="bettor-stats__label">Won</span>
-          <span class="bettor-stats__value" style="color: var(--status-active);">${wins}</span>
-        </div>
-        <div class="bettor-stats__item">
-          <span class="bettor-stats__label">Lost</span>
-          <span class="bettor-stats__value" style="color: var(--status-pending);">${losses}</span>
-        </div>
-        <div class="bettor-stats__item">
-          <span class="bettor-stats__label">Net</span>
-          <span class="bettor-stats__value bettor-stats__value--${netClass}">${netSign}€${netMoney.toFixed(2)}</span>
-        </div>
-      </div>
-    `;
-  }
-
   return `
     <div class="filters">
       <button class="filter-btn ${statusFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
@@ -356,7 +307,6 @@ function renderFilters() {
         ${bettorOptions}
       </select>
     </div>
-    ${bettorStatsHtml}
   `;
 }
 
@@ -441,12 +391,10 @@ function renderMembersView() {
 function renderDashboardView() {
   return `
     <div class="mobile-only-action">
-      <button class="btn btn--primary btn--full" id="dashNewBetBtn">🎲 Place New Bet</button>
+      <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
     </div>
 
     ${renderLeaderboard()}
-
-    ${renderStatsCards()}
 
     <section class="section">
       <div class="section__header">
@@ -462,14 +410,48 @@ function renderDashboardView() {
   `;
 }
 
+// Render Individual Stats Bar
+function renderIndividualStats(name) {
+  const member = memberStats.find(m => m.name === name);
+  if (!member) return '';
+
+  const totalBets = (member.wins || 0) + (member.losses || 0) + (member.activeBets || 0);
+  const profitSign = member.netProfit > 0 ? '+' : '';
+  const netColor = member.netProfit >= 0 ? 'var(--status-active)' : '#ff4757';
+
+  return `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__label">Total Bets</div>
+        <div class="stat-card__value">${totalBets}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Won</div>
+        <div class="stat-card__value" style="color: var(--status-active);">${member.wins}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Lost</div>
+        <div class="stat-card__value" style="color: #ff4757;">${member.losses}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Net</div>
+        <div class="stat-card__value" style="color: ${netColor};">${profitSign}${formatCurrency(member.netProfit)}</div>
+      </div>
+    </div>
+  `;
+}
+
 // Render All Bets View
 function renderAllBetsView() {
+  const statsHtml = bettorFilter === 'all' ? renderStatsCards() : renderIndividualStats(bettorFilter);
+
   return `
     <section class="section">
       <div class="section__header">
-        <h2 class="section__title"><span>🎲</span> All Bets</h2>
+        <h2 class="section__title">All Bets</h2>
       </div>
       ${renderFilters()}
+      ${statsHtml}
       ${renderBetsList()}
     </section>
   `;
@@ -531,13 +513,13 @@ function renderNewBetModal() {
       <div class="modal" id="modalContainer">
         ${overlayContent}
         <div class="modal__header">
-          <h2 class="modal__title">🎲 New Bet</h2>
+          <h2 class="modal__title">New Bet</h2>
           <button class="modal__close" id="closeModalBtn">&times;</button>
         </div>
         <p id="newBetError" class="error-message" style="margin: 0 var(--space-lg); display: none;"></p>
         <form class="modal__form" id="newBetForm">
           <div class="form-group" style="margin-bottom: var(--space-lg);">
-            <label class="form-label" style="text-align: center; display: block; margin-bottom: var(--space-sm);">Who's Betting?</label>
+            <label class="form-label" style="display: block; margin-bottom: var(--space-sm);">Who's Betting?</label>
             <div class="betters-row" style="display: flex; align-items: center; gap: var(--space-md);">
               <select class="form-select" name="better1" id="better1Select" style="flex: 1;" required>
                 <option value="">Select bettor...</option>
@@ -578,7 +560,7 @@ function renderNewBetModal() {
           <div class="form-actions">
             <button type="button" class="btn btn--secondary" id="cancelBetBtn">Cancel</button>
             <button type="submit" class="btn btn--primary" ${isSubmitting ? 'disabled' : ''}>
-              ${isSubmitting ? 'Submitting...' : '🎯 Place Bet'}
+              ${isSubmitting ? 'Submitting...' : 'Place Bet'}
             </button>
           </div>
         </form>
@@ -1124,13 +1106,11 @@ function renderResolveModal() {
             </div>
           ` : `
           <div class="resolve-actions" style="display: grid; gap: var(--space-md); grid-template-columns: 1fr 1fr;">
-            <button class="btn btn--outline resolve-winner-btn" data-winner="better1" style="height: auto; padding: 1rem;">
-              <span style="display: block; font-weight: bold; margin-bottom: 0.25rem;">${bet.better1}</span>
-              <span style="font-size: 0.8rem; opacity: 0.8;">Won ${formatCurrency(bet.better1Reward)}</span>
+            <button class="btn btn--outline resolve-winner-btn" data-winner="better1">
+              ${bet.better1}
             </button>
-            <button class="btn btn--outline resolve-winner-btn" data-winner="better2" style="height: auto; padding: 1rem;">
-              <span style="display: block; font-weight: bold; margin-bottom: 0.25rem;">${bet.better2}</span>
-              <span style="font-size: 0.8rem; opacity: 0.8;">Won ${formatCurrency(bet.better2Reward)}</span>
+            <button class="btn btn--outline resolve-winner-btn" data-winner="better2">
+              ${bet.better2}
             </button>
           </div>
           `}
@@ -1199,6 +1179,17 @@ async function handleResolvePayment(betId) {
 if (app) {
 
   app.onclick = (e) => {
+    // Leaderboard Click
+    const leaderboardItem = e.target.closest('.leaderboard__item');
+    if (leaderboardItem) {
+      currentView = 'bets';
+      statusFilter = 'all';
+      bettorFilter = leaderboardItem.dataset.bettor;
+      render();
+      window.scrollTo(0, 0);
+      return;
+    }
+
     // Open Modal
     if (e.target.matches('.resolve-btn')) {
       resolveBetId = e.target.dataset.id;

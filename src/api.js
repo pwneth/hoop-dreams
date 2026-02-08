@@ -350,8 +350,8 @@ export function calculateMemberStats(bets) {
     if (stats[bet.better1]) stats[bet.better1].totalBets++;
     if (stats[bet.better2]) stats[bet.better2].totalBets++;
 
-    // Process completed bets
-    if (bet.status === 'paid' && bet.winnerName && bet.loserName) {
+    // Process completed bets (paid or resolved/pending)
+    if ((bet.status === 'paid' || bet.status === 'pending') && bet.winnerName && bet.loserName) {
       if (stats[bet.winnerName]) {
         stats[bet.winnerName].wins++;
         stats[bet.winnerName].totalWon += bet.amountWon;
