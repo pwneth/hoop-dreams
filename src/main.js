@@ -42,10 +42,12 @@ function renderHeader() {
     <header class="header">
       <div class="header__inner">
         <div class="header__brand">
-          <span class="header__logo">🏀</span>
-          <span class="header__title">Bookie of the Year</span>
+          <span class="header__logo">🎲</span>
+          <span class="header__title">HD Bets</span>
         </div>
-        <nav class="header__nav">
+        <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">☰</button>
+        <div class="nav-overlay" id="navOverlay"></div>
+        <nav class="header__nav" id="mainNav">
           <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
             Dashboard
           </button>
@@ -58,8 +60,8 @@ function renderHeader() {
           <button class="nav-btn nav-btn--primary" id="newBetBtn">
             + New Bet
           </button>
-          <button class="nav-btn" id="logoutBtn" title="Logout">
-            🚪
+          <button class="nav-btn" id="logoutBtn" title="Logout" style="color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+            Logout ➜
           </button>
         </nav>
       </div>
@@ -73,8 +75,8 @@ function renderLoginScreen() {
     <div class="login-container">
       <div class="login-card">
         <div class="login-card__header">
-          <span class="login-card__logo">🏀</span>
-          <h1 class="login-card__title">Bookie of the Year</h1>
+          <span class="login-card__logo">🎲</span>
+          <h1 class="login-card__title">HD Bets</h1>
           <p class="login-card__subtitle">Fantasy Basketball Betting</p>
         </div>
         <form class="login-form" id="loginForm">
@@ -280,14 +282,23 @@ function renderMembersView() {
 // Render Dashboard View
 function renderDashboardView() {
   return `
-    ${renderStatsCards()}
+    <div class="mobile-only-action">
+      <button class="btn btn--primary btn--full" id="dashNewBetBtn">🎲 Place New Bet</button>
+    </div>
+
     ${renderLeaderboard()}
+
+    ${renderStatsCards()}
+
     <section class="section">
       <div class="section__header">
         <h2 class="section__title"><span>🔥</span> Recent Bets</h2>
       </div>
       <div class="bets-grid">
         ${bets.slice(0, 5).map(bet => renderBetCard(bet)).join('')}
+      </div>
+      <div style="margin-top: var(--space-lg); text-align: center;">
+        <button class="btn btn--secondary btn--full" id="dashViewAllBtn">See All Bets</button>
       </div>
     </section>
   `;
@@ -475,6 +486,31 @@ function attachEventListeners() {
     });
   });
 
+  // Mobile Menu Toggle
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const mainNav = document.getElementById('mainNav');
+  const navOverlay = document.getElementById('navOverlay');
+
+  if (hamburgerBtn && mainNav && navOverlay) {
+    function toggleMenu() {
+      mainNav.classList.toggle('active');
+      navOverlay.classList.toggle('active');
+      hamburgerBtn.innerHTML = mainNav.classList.contains('active') ? '✕' : '☰';
+    }
+
+    hamburgerBtn.addEventListener('click', toggleMenu);
+    navOverlay.addEventListener('click', toggleMenu);
+
+    // Close menu when any nav button is clicked
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (mainNav.classList.contains('active')) {
+          toggleMenu();
+        }
+      });
+    });
+  }
+
   // Filters
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -491,6 +527,23 @@ function attachEventListeners() {
   if (newBetBtn) {
     newBetBtn.addEventListener('click', () => {
       showNewBetModal = true;
+      render();
+    });
+  }
+
+  // Dashboard specific buttons
+  const dashNewBetBtn = document.getElementById('dashNewBetBtn');
+  if (dashNewBetBtn) {
+    dashNewBetBtn.addEventListener('click', () => {
+      showNewBetModal = true;
+      render();
+    });
+  }
+
+  const dashViewAllBtn = document.getElementById('dashViewAllBtn');
+  if (dashViewAllBtn) {
+    dashViewAllBtn.addEventListener('click', () => {
+      currentView = 'bets';
       render();
     });
   }

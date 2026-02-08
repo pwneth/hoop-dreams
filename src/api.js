@@ -138,6 +138,21 @@ function parseBetsFromAPI(data) {
     const better1Reward = parseCurrency(row['Better 1 reward'] || row['Reward 1'] || '');
     const better2Reward = parseCurrency(row['Better 2 reward'] || row['Reward 2'] || '');
 
+    const rawStatus = row['Status'] || '';
+    const winner = row['Winner'] || '';
+
+    // Status logic based on Sheet data:
+    // 1. If Status is "Paid" -> paid
+    // 2. If Winner is set but not paid -> pending
+    // 3. If no winner and not paid -> active
+    let status = 'active';
+
+    if (String(rawStatus).toLowerCase() === 'paid') {
+      status = 'paid';
+    } else if (winner) {
+      status = 'pending';
+    }
+
     return {
       id: index,
       date: parseDate(row['Date'] || ''),
@@ -147,8 +162,8 @@ function parseBetsFromAPI(data) {
       better2Bet: row['Better 2 bet'] || row['Bet 2'] || '',
       better1Reward,
       better2Reward,
-      winner: row['Winner'] || '',
-      status: row['Status'] || '',
+      winner,
+      status, // Normalized status
       winnerName: row['Winner name'] || row['Winner'] || '',
       amountWon: parseCurrency(row['Amount won'] || ''),
       loserName: row['Loser name'] || '',
