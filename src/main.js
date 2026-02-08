@@ -74,8 +74,9 @@ function renderHeader() {
           <span class="header__title">HD Bets</span>
         </div>
         <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">☰</button>
-        <div class="nav-overlay" id="navOverlay"></div>
-        <nav class="header__nav" id="mainNav">
+        
+        <!-- Desktop Nav -->
+        <nav class="header__nav desktop-only">
           <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
             Dashboard
           </button>
@@ -85,18 +86,44 @@ function renderHeader() {
           <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-view="members">
             Members
           </button>
-          <button class="nav-btn nav-btn--primary" id="newBetBtn">
+          <button class="nav-btn nav-btn--primary js-new-bet-btn">
             + New Bet
           </button>
-          <button class="nav-btn" id="themeToggleBtn" title="Toggle theme" style="font-size: 1.25rem; padding: 0.5rem;">
+          <button class="nav-btn js-theme-toggle" title="Toggle theme" style="font-size: 1.25rem; padding: 0.5rem;">
             ${isDarkMode ? '☀️' : '🌙'}
           </button>
-          <button class="nav-btn" id="logoutBtn" title="Logout" style="color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+          <button class="nav-btn js-logout-btn" title="Logout" style="color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
             Logout ➜
           </button>
         </nav>
       </div>
     </header>
+  `;
+}
+
+// Render Mobile Nav (outside header for z-index layering)
+function renderMobileNav() {
+  return `
+    <nav class="header__nav mobile-only" id="mainNav">
+      <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
+        Dashboard
+      </button>
+      <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-view="bets">
+        All Bets
+      </button>
+      <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-view="members">
+        Members
+      </button>
+      <button class="nav-btn nav-btn--primary js-new-bet-btn">
+        + New Bet
+      </button>
+      <button class="nav-btn js-theme-toggle" title="Toggle theme" style="font-size: 1.25rem; padding: 0.5rem;">
+        ${isDarkMode ? '☀️' : '🌙'}
+      </button>
+      <button class="nav-btn js-logout-btn" title="Logout" style="color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+        Logout ➜
+      </button>
+    </nav>
   `;
 }
 
@@ -513,14 +540,14 @@ function renderNewBetModal() {
             <label class="form-label" style="text-align: center; display: block; margin-bottom: var(--space-sm);">Who's Betting?</label>
             <div class="betters-row" style="display: flex; align-items: center; gap: var(--space-md);">
               <select class="form-select" name="better1" id="better1Select" style="flex: 1;" required>
-                <option value="">Select better...</option>
-                <option value="__new__">+ Add New Better</option>
+                <option value="">Select bettor...</option>
+                <option value="__new__">+ Add New Bettor</option>
                 ${betterOptions}
               </select>
               <span style="font-weight: 700; color: var(--text-muted); flex-shrink: 0;">VS</span>
               <select class="form-select" name="better2" id="better2Select" style="flex: 1;" required>
-                <option value="">Select better...</option>
-                <option value="__new__">+ Add New Better</option>
+                <option value="">Select bettor...</option>
+                <option value="__new__">+ Add New Bettor</option>
                 ${betterOptions}
               </select>
             </div>
@@ -577,6 +604,8 @@ function render() {
   }
 
   app.innerHTML = `
+    <div class="nav-overlay" id="navOverlay"></div>
+    ${renderMobileNav()}
     ${renderHeader()}
     <main class="main">
       ${mainContent}
@@ -792,7 +821,8 @@ async function handleNewBetSubmit(e) {
 // Attach Event Listeners
 function attachEventListeners() {
   // Navigation
-  document.querySelectorAll('.nav-btn:not(#newBetBtn)').forEach(btn => {
+  // Navigation use data-view attribute, exclude shared buttons which have specific listeners
+  document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const view = e.target.dataset.view;
       if (view && view !== currentView) {
@@ -848,15 +878,14 @@ function attachEventListeners() {
   }
 
   // New Bet Button
-  const newBetBtn = document.getElementById('newBetBtn');
-  if (newBetBtn) {
-    newBetBtn.addEventListener('click', () => {
+  document.querySelectorAll('.js-new-bet-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
       showNewBetModal = true;
       selectedBetter1 = '';
       selectedBetter2 = '';
       render();
     });
-  }
+  });
 
   // Dashboard specific buttons
   const dashNewBetBtn = document.getElementById('dashNewBetBtn');
@@ -970,16 +999,14 @@ function attachEventListeners() {
   }
 
   // Logout handler
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
-  }
+  document.querySelectorAll('.js-logout-btn').forEach(btn => {
+    btn.addEventListener('click', handleLogout);
+  });
 
   // Theme toggle handler
-  const themeToggleBtn = document.getElementById('themeToggleBtn');
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', toggleTheme);
-  }
+  document.querySelectorAll('.js-theme-toggle').forEach(btn => {
+    btn.addEventListener('click', toggleTheme);
+  });
 }
 
 // Handle Login
