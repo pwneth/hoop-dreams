@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Apps Script contains sensitive credentials
+google-apps-script/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
