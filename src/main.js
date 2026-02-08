@@ -170,7 +170,7 @@ function renderBetCard(bet) {
   return `
     <div class="bet-card ${cardClass}">
       <div class="bet-card__header">
-        <span class="bet-card__date">${bet.dateStr}</span>
+        <span class="bet-card__date">${bet.date ? bet.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
         <span class="bet-card__status ${statusClass}">${statusLabel}</span>
       </div>
       <div class="bet-card__matchup">
