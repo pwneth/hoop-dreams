@@ -231,9 +231,15 @@ function parseDate(dateStr) {
   // Convert to string in case API returns a different type
   const strDate = String(dateStr);
 
-  // Handle format: DD-MMM-YYYY (e.g., "18-Sep-2025")
+  // Try parsing as ISO date first (API returns: 2025-09-17T22:00:00.000Z)
+  const isoDate = new Date(strDate);
+  if (!isNaN(isoDate.getTime())) {
+    return isoDate;
+  }
+
+  // Handle format: DD-MMM-YYYY (e.g., "18-Sep-2025") for manually added bets
   const parts = strDate.split('-');
-  if (parts.length === 3) {
+  if (parts.length === 3 && isNaN(parseInt(parts[1]))) {
     const months = {
       'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
       'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
@@ -247,7 +253,7 @@ function parseDate(dateStr) {
     }
   }
 
-  return new Date(dateStr);
+  return null;
 }
 
 /**
