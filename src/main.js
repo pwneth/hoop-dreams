@@ -503,6 +503,17 @@ function getOtherBetter(bet, user) {
 function renderBetActions(bet, canModify) {
   if (!canModify || bet.status === 'paid') return '';
 
+  if (resolveIsSubmitting && resolveBetId == bet.id) {
+    return `
+      <div class="bet-actions-row">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div class="loading__spinner loading__spinner--sm"></div>
+          <span class="action-label">Updating...</span>
+        </div>
+      </div>
+    `;
+  }
+
   // BET CONFIRMATION
   if (bet.status === 'confirming') {
     const isOpponent = currentUser.username === bet.better2 || currentUser.isAdmin;
@@ -540,17 +551,6 @@ function renderBetActions(bet, canModify) {
   const isWaitingForWinner = !bet.winnerLabel;
   // If winner determined but not paid, we are waiting for payment
   const isWaitingForPayment = !!bet.winnerLabel && bet.status !== 'paid';
-
-  if (resolveIsSubmitting && resolveBetId == bet.id) {
-    return `
-      <div class="bet-actions-row">
-        <div style="display: flex; align-items: center; gap: var(--space-sm);">
-          <div class="loading__spinner loading__spinner--sm"></div>
-          <span class="action-label">Updating...</span>
-        </div>
-      </div>
-    `;
-  }
 
   // WINNER RESOLUTION
   if (isWaitingForWinner) {
@@ -732,17 +732,17 @@ function renderBetsList() {
 
   if (filteredBets.length === 0) {
     return `
-      <div class="empty-state">
+  < div class="empty-state" >
         <div class="empty-state__icon">🎲</div>
         <p>No bets found</p>
-      </div>
-    `;
+      </div >
+  `;
   }
 
   return `
-    <div class="bets-grid">
-      ${filteredBets.map(bet => renderBetCard(bet)).join('')}
-    </div>
+  < div class="bets-grid" >
+    ${filteredBets.map(bet => renderBetCard(bet)).join('')}
+    </div >
   `;
 }
 
@@ -753,7 +753,7 @@ function renderMemberCard(member) {
   const profitSign = member.netProfit > 0 ? '+' : '';
 
   return `
-    <div class="member-card">
+  < div class="member-card" >
       <div class="member-card__header">
         <div class="member-card__avatar">${getInitials(member.name)}</div>
         <div>
@@ -775,7 +775,7 @@ function renderMemberCard(member) {
           <div class="member-card__stat-label">Active</div>
         </div>
       </div>
-    </div>
+    </div >
   `;
 }
 
@@ -784,31 +784,31 @@ function renderMembersView() {
     return '<div class="empty-state"><div class="empty-state__icon">👥</div>No members found</div>';
   }
   return `
-    <div class="member-grid">
-      ${memberStats.map(member => renderMemberCard(member)).join('')}
-    </div>
+  < div class="member-grid" >
+    ${memberStats.map(member => renderMemberCard(member)).join('')}
+    </div >
   `;
 }
 
 function renderDashboardView() {
   return `
     ${renderActionToast()}
-    <div class="mobile-only-action">
-      <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
-    </div>
+<div class="mobile-only-action">
+  <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
+</div>
     ${renderLeaderboard()}
-    <section class="section">
-      <div class="section__header">
-        <h2 class="section__title"><span>🔥</span> Recent Bets</h2>
-      </div>
-      <div class="bets-grid">
-        ${bets.slice(0, 5).map(bet => renderBetCard(bet)).join('')}
-      </div>
-      <div style="margin-top: var(--space-lg); text-align: center;">
-        <button class="btn btn--secondary btn--full" id="dashViewAllBtn">See All Bets</button>
-      </div>
-    </section>
-  `;
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title"><span>🔥</span> Recent Bets</h2>
+  </div>
+  <div class="bets-grid">
+    ${bets.slice(0, 5).map(bet => renderBetCard(bet)).join('')}
+  </div>
+  <div style="margin-top: var(--space-lg); text-align: center;">
+    <button class="btn btn--secondary btn--full" id="dashViewAllBtn">See All Bets</button>
+  </div>
+</section>
+`;
 }
 
 function renderIndividualStats(name) {
@@ -819,7 +819,7 @@ function renderIndividualStats(name) {
   const netColor = member.netProfit >= 0 ? 'var(--status-active)' : '#ff4757';
 
   return `
-    <div class="stats-grid">
+  < div class="stats-grid" >
       <div class="stat-card">
         <div class="stat-card__label">Total Bets</div>
         <div class="stat-card__value">${totalBets}</div>
@@ -840,38 +840,38 @@ function renderIndividualStats(name) {
         <div class="stat-card__label">Net</div>
         <div class="stat-card__value" style="color: ${netColor};">${profitSign}${formatCurrency(member.netProfit)}</div>
       </div>
-    </div>
+    </div >
   `;
 }
 
 function renderAllBetsView() {
   const statsHtml = bettorFilter === 'all' ? renderStatsCards() : renderIndividualStats(bettorFilter);
   return `
-    <section class="section">
-      <div class="section__header">
-        <h2 class="section__title">All Bets</h2>
-      </div>
+  < section class="section" >
+    <div class="section__header">
+      <h2 class="section__title">All Bets</h2>
+    </div>
       ${renderFilters()}
       ${statsHtml}
       ${renderBetsList()}
-    </section>
+    </section >
   `;
 }
 
 function renderAllMembersView() {
   return `
-    <section class="section">
-      <div class="section__header">
-        <h2 class="section__title"><span>👥</span> Member Statistics</h2>
-      </div>
+  < section class="section" >
+    <div class="section__header">
+      <h2 class="section__title"><span>👥</span> Member Statistics</h2>
+    </div>
       ${renderMembersView()}
-    </section>
+    </section >
   `;
 }
 
 function renderLoading() {
   return `
-    <div style="max-width: 1400px; margin: 0 auto;">
+  < div style = "max-width: 1400px; margin: 0 auto;" >
       <div class="skeleton-section-title skeleton"></div>
       <div class="skeleton-leaderboard">
         ${Array(5).fill(0).map(() => `
@@ -900,38 +900,38 @@ function renderLoading() {
           </div>
         `).join('')}
       </div>
-    </div>
+    </div >
   `;
 }
 
 function renderChangePasswordModal() {
   if (!showChangePasswordModal) return '';
   return `
-    <div class="modal-overlay" id="pwModalOverlay">
-      <div class="modal">
-        <div class="modal__header">
-          <h2 class="modal__title">Change Password</h2>
-          <button class="modal__close" id="closePwModalBtn">&times;</button>
-        </div>
-        <form class="modal__form" id="changePwForm">
-          <div class="form-group">
-            <label class="form-label">Old Password</label>
-            <input type="password" class="form-input" name="oldPassword" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">New Password</label>
-            <input type="password" class="form-input" name="newPassword" required />
-          </div>
-          
-          <div class="error-message" id="pwError" style="margin-top: 1rem; display: none;"></div>
-          
-          <div class="form-actions">
-            <button type="button" class="btn btn--secondary" id="cancelPwBtn">Cancel</button>
-            <button type="submit" class="btn btn--primary">Change Password</button>
-          </div>
-        </form>
+  < div class="modal-overlay" id = "pwModalOverlay" >
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">Change Password</h2>
+        <button class="modal__close" id="closePwModalBtn">&times;</button>
       </div>
+      <form class="modal__form" id="changePwForm">
+        <div class="form-group">
+          <label class="form-label">Old Password</label>
+          <input type="password" class="form-input" name="oldPassword" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" class="form-input" name="newPassword" required />
+        </div>
+
+        <div class="error-message" id="pwError" style="margin-top: 1rem; display: none;"></div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--secondary" id="cancelPwBtn">Cancel</button>
+          <button type="submit" class="btn btn--primary">Change Password</button>
+        </div>
+      </form>
     </div>
+    </div >
   `;
 }
 
@@ -942,7 +942,7 @@ function renderNewBetModal() {
   const allBetters = [...new Set(LEAGUE_MEMBERS)].filter(b => b.toLowerCase() !== 'pot' && b !== currentUser.username);
   const betterOptions = allBetters.map(m => {
     const name = (typeof m === 'object' && m !== null) ? (m.username || m.name || 'User') : String(m);
-    return `<option value="${name}">${name}</option>`;
+    return `< option value = "${name}" > ${name}</option > `;
   }).join('');
 
   const loadingClass = isSubmitting ? 'is-loading' : '';
@@ -950,77 +950,77 @@ function renderNewBetModal() {
   const me = currentUser.username;
 
   return `
-    <div class="modal-overlay ${loadingClass} ${successClass}" id="modalOverlay">
-      <div class="modal" id="modalContainer">
-        <!-- Loader Overlay -->
-        <div class="modal-overlay-loader">
-          <div class="basketball-loader">🏀</div>
-          <p style="margin-top: var(--space-lg); font-weight: 700; color: var(--text-primary); letter-spacing: 1px; font-size: 0.9rem;">LOCKING IN YOUR BET...</p>
-        </div>
-
-        <!-- Success Overlay -->
-        <div class="modal-overlay-success">
-          <div class="success-icon">🎲</div>
-          <p class="success-text">Bet Placed Successfully!</p>
-          <p class="success-subtext">Good luck to both bettors! May the best baller win. 🏀</p>
-        </div>
-
-        <!-- Main Form Content -->
-        <div class="modal__header">
-          <h2 class="modal__title">New Bet</h2>
-          <button class="modal__close" id="closeModalBtn">&times;</button>
-        </div>
-        <p id="newBetError" class="error-message" style="margin: 0 var(--space-lg); display: none;"></p>
-        <form class="modal__form" id="newBetForm">
-          <div class="form-group" style="margin-bottom: var(--space-lg);">
-            <label class="form-label" style="display: block; margin-bottom: var(--space-sm);">Who are you betting against?</label>
-            <div class="betters-row" style="display: flex; align-items: center; gap: var(--space-md);">
-              <div style="flex: 1; padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--radius-md); text-align: center; font-weight: 700; border: 1px solid var(--border-medium);">
-                ${me} (You)
-                <input type="hidden" name="better1" value="${me}" />
-              </div>
-              <span style="font-weight: 700; color: var(--text-muted); flex-shrink: 0;">VS</span>
-              <select class="form-select" name="better2" id="better2Select" style="flex: 1;" required>
-                <option value="">Select opponent...</option>
-                ${betterOptions}
-              </select>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Your Bet</label>
-              <textarea class="form-textarea" name="better1Bet" placeholder="e.g. Knicks win" required></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Opponent's Bet</label>
-              <textarea class="form-textarea" name="better2Bet" placeholder="e.g. Knicks lose" required></textarea>
-            </div>
-          </div>
-          
-          <div class="form-row">
-             <!-- Shared Stakes for now, or assume equal stakes? -->
-             <!-- The user said: "people cannot make bets for other people" -->
-             <!-- We'll keep separate stakes inputs but label them clearly -->
-            <div class="form-group">
-              <label class="form-label">Your Stake (€)</label>
-              <input type="number" class="form-input" name="better1Reward" min="1" step="0.01" placeholder="20.00" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Opponent's Stake (€)</label>
-              <input type="number" class="form-input" name="better2Reward" min="1" step="0.01" placeholder="20.00" required />
-            </div>
-          </div>
-          
-          <div class="form-actions">
-            <button type="button" class="btn btn--secondary" id="cancelBetBtn">Cancel</button>
-            <button type="submit" class="btn btn--primary" ${isSubmitting ? 'disabled' : ''}>
-              ${isSubmitting ? 'Submitting...' : 'Place Bet'}
-            </button>
-          </div>
-        </form>
+  < div class="modal-overlay ${loadingClass} ${successClass}" id = "modalOverlay" >
+    <div class="modal" id="modalContainer">
+      <!-- Loader Overlay -->
+      <div class="modal-overlay-loader">
+        <div class="basketball-loader">🏀</div>
+        <p style="margin-top: var(--space-lg); font-weight: 700; color: var(--text-primary); letter-spacing: 1px; font-size: 0.9rem;">LOCKING IN YOUR BET...</p>
       </div>
+
+      <!-- Success Overlay -->
+      <div class="modal-overlay-success">
+        <div class="success-icon">🎲</div>
+        <p class="success-text">Bet Placed Successfully!</p>
+        <p class="success-subtext">Good luck to both bettors! May the best baller win. 🏀</p>
+      </div>
+
+      <!-- Main Form Content -->
+      <div class="modal__header">
+        <h2 class="modal__title">New Bet</h2>
+        <button class="modal__close" id="closeModalBtn">&times;</button>
+      </div>
+      <p id="newBetError" class="error-message" style="margin: 0 var(--space-lg); display: none;"></p>
+      <form class="modal__form" id="newBetForm">
+        <div class="form-group" style="margin-bottom: var(--space-lg);">
+          <label class="form-label" style="display: block; margin-bottom: var(--space-sm);">Who are you betting against?</label>
+          <div class="betters-row" style="display: flex; align-items: center; gap: var(--space-md);">
+            <div style="flex: 1; padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--radius-md); text-align: center; font-weight: 700; border: 1px solid var(--border-medium);">
+              ${me} (You)
+              <input type="hidden" name="better1" value="${me}" />
+            </div>
+            <span style="font-weight: 700; color: var(--text-muted); flex-shrink: 0;">VS</span>
+            <select class="form-select" name="better2" id="better2Select" style="flex: 1;" required>
+              <option value="">Select opponent...</option>
+              ${betterOptions}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Your Bet</label>
+            <textarea class="form-textarea" name="better1Bet" placeholder="e.g. Knicks win" required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Opponent's Bet</label>
+            <textarea class="form-textarea" name="better2Bet" placeholder="e.g. Knicks lose" required></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Shared Stakes for now, or assume equal stakes? -->
+          <!-- The user said: "people cannot make bets for other people" -->
+          <!-- We'll keep separate stakes inputs but label them clearly -->
+          <div class="form-group">
+            <label class="form-label">Your Stake (€)</label>
+            <input type="number" class="form-input" name="better1Reward" min="1" step="0.01" placeholder="20.00" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Opponent's Stake (€)</label>
+            <input type="number" class="form-input" name="better2Reward" min="1" step="0.01" placeholder="20.00" required />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--secondary" id="cancelBetBtn">Cancel</button>
+          <button type="submit" class="btn btn--primary" ${isSubmitting ? 'disabled' : ''}>
+            ${isSubmitting ? 'Submitting...' : 'Place Bet'}
+          </button>
+        </div>
+      </form>
     </div>
+    </div >
   `;
 }
 
@@ -1044,13 +1044,13 @@ function render(target = 'all') {
 
   if (target === 'all' || target === 'app') {
     app.innerHTML = `
-      <div class="nav-overlay" id="navOverlay"></div>
-      ${renderMobileNav()}
+  < div class="nav-overlay" id = "navOverlay" ></div >
+    ${renderMobileNav()}
       ${renderHeader()}
-      <main class="main">
-        ${mainContent}
-      </main>
-    `;
+<main class="main">
+  ${mainContent}
+</main>
+`;
   }
 
   if (target === 'all' || target === 'modals') {
@@ -1072,7 +1072,7 @@ function render(target = 'all') {
       modalsEl.innerHTML = `
         ${renderNewBetModal()}
         ${renderChangePasswordModal()}
-      `;
+`;
     }
   }
 
@@ -1452,13 +1452,13 @@ async function init() {
     console.error('Failed to load bets:', error);
     app.innerHTML = `
       ${renderHeader()}
-      <main class="main">
-        <div class="empty-state">
-          <div class="empty-state__icon">❌</div>
-          <p>Failed to load betting data. Please try again later.</p>
-        </div>
-      </main>
-    `;
+<main class="main">
+  <div class="empty-state">
+    <div class="empty-state__icon">❌</div>
+    <p>Failed to load betting data. Please try again later.</p>
+  </div>
+</main>
+`;
     // Re-attach listeners needed for logout
     attachEventListeners();
   }

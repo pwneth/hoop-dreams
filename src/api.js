@@ -2,7 +2,7 @@
 // IMPORTANT: Replace this URL after deploying the Apps Script
 // See /google-apps-script/Code.gs for deployment instructions
 // NOTE: You MUST deploy the new version of Code.gs for this to work!
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxNVQJ98tn9dF04yOJkLiZWEfon5B8E6iYcb4mkGKQK_EPl-njdwhl8cekkiJ3iyB01/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxk4CRS7-fxW3EtaeLkcPVTVxFfrF9qH_R6zmbd5cXORgs-LbX-tksDBP4XSaeyGNOj/exec';
 
 // Known league members (populated from server, fallback to hardcoded)
 export let LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
