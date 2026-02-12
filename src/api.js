@@ -530,7 +530,6 @@ export function calculateOverallStats(bets) {
     activeBets,
     completedBets,
     pendingBets,
-    unconfirmedBets,
     totalVolume: totalVolume / 2
   };
 }
