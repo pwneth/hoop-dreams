@@ -2,7 +2,7 @@
 // IMPORTANT: Replace this URL after deploying the Apps Script
 // See /google-apps-script/Code.gs for deployment instructions
 // NOTE: You MUST deploy the new version of Code.gs for this to work!
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLDt5uZXwYJQ0EtfTNAAk3j7BqFqqAt1o9dyOKOU1r51-pEvrxKTCJmI7iCy4zrPW7/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxNVQJ98tn9dF04yOJkLiZWEfon5B8E6iYcb4mkGKQK_EPl-njdwhl8cekkiJ3iyB01/exec';
 
 // Known league members (populated from server, fallback to hardcoded)
 export let LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
@@ -266,6 +266,30 @@ export async function updateBet(betId, winner) {
 }
 
 /**
+ * Confirm or decline a bet
+ */
+export async function confirmBet(betId, confirmAction) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  const params = new URLSearchParams({
+    action: 'confirmBet',
+    rowId: betId,
+    confirmAction: confirmAction, // 'confirm' or 'decline'
+    username: currentUser.username,
+    password: currentUser.password
+  });
+
+  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+  const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to ' + confirmAction + ' bet');
+  }
+  return result;
+}
+
+/**
  * Mark a bet as paid
  */
 export async function markBetAsPaid(betId) {
@@ -316,6 +340,10 @@ function parseBetsFromAPI(data) {
     let status = 'active';
     if (String(rawStatus).toLowerCase() === 'paid') {
       status = 'paid';
+    } else if (String(rawStatus).toLowerCase() === 'pending confirmation') {
+      status = 'confirming';
+    } else if (String(rawStatus).toLowerCase() === 'declined') {
+      status = 'declined';
     } else if (winnerLabel) {
       status = 'pending'; // Winner determined, but not paid
     }
@@ -443,6 +471,12 @@ export function calculateMemberStats(bets) {
   });
 
   bets.forEach(bet => {
+    if (bet.status === 'confirming' || bet.status === 'declined') return; // Skip these bets for stats calculation
+
+    // Increment totalBets for official bets
+    if (stats[bet.better1]) stats[bet.better1].totalBets++;
+    if (stats[bet.better2]) stats[bet.better2].totalBets++;
+
     if (bet.status === 'active') {
       if (stats[bet.better1]) {
         stats[bet.better1].activeBets++;
@@ -452,19 +486,17 @@ export function calculateMemberStats(bets) {
         stats[bet.better2].activeBets++;
         stats[bet.better2].potentialGain += bet.better2Reward || 0;
       }
-    }
+    } else if (bet.status === 'pending' || bet.status === 'paid') {
+      const winner = bet.winnerName;
+      const loser = bet.loserName;
 
-    if (stats[bet.better1]) stats[bet.better1].totalBets++;
-    if (stats[bet.better2]) stats[bet.better2].totalBets++;
-
-    if ((bet.status === 'paid' || bet.status === 'pending') && bet.winnerName && bet.loserName) {
-      if (stats[bet.winnerName]) {
-        stats[bet.winnerName].wins++;
-        stats[bet.winnerName].totalWon += bet.amountWon || 0;
+      if (stats[winner]) {
+        stats[winner].wins++;
+        stats[winner].totalWon += bet.amountWon || 0;
       }
-      if (stats[bet.loserName]) {
-        stats[bet.loserName].losses++;
-        stats[bet.loserName].totalLost += bet.amountLost || 0;
+      if (stats[loser]) {
+        stats[loser].losses++;
+        stats[loser].totalLost += bet.amountLost || 0;
       }
     }
   });
@@ -481,20 +513,24 @@ export function calculateMemberStats(bets) {
 }
 
 export function calculateOverallStats(bets) {
-  const activeBets = bets.filter(b => b.status === 'active').length;
-  const completedBets = bets.filter(b => b.status === 'paid').length;
-  const pendingBets = bets.filter(b => b.status === 'pending').length;
+  const officialBets = bets.filter(b => b.status !== 'confirming' && b.status !== 'declined');
+
+  const activeBets = officialBets.filter(b => b.status === 'active').length;
+  const completedBets = officialBets.filter(b => b.status === 'paid').length;
+  // 'Pending' now includes both unpaid official bets AND unconfirmed proposals
+  const pendingBets = bets.filter(b => b.status === 'pending' || b.status === 'confirming').length;
 
   let totalVolume = 0;
-  bets.forEach(bet => {
-    totalVolume += bet.better1Reward + bet.better2Reward;
+  officialBets.forEach(bet => {
+    totalVolume += (bet.better1Reward || 0) + (bet.better2Reward || 0);
   });
 
   return {
-    totalBets: bets.length,
+    totalBets: officialBets.length,
     activeBets,
     completedBets,
     pendingBets,
+    unconfirmedBets,
     totalVolume: totalVolume / 2
   };
 }

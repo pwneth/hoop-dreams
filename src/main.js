@@ -13,7 +13,8 @@ import {
   getCurrentUser,
   logout,
   changePassword,
-  fetchUsers
+  fetchUsers,
+  confirmBet
 } from './api.js';
 
 // Auth State
@@ -37,6 +38,7 @@ let resolveBetId = null;
 let resolveIsSubmitting = false;
 let confirmingResolution = null;
 let confirmingPaymentId = null;
+let confirmingBetId = null;
 let showChangePasswordModal = false;
 
 // Theme State
@@ -476,7 +478,41 @@ function getOtherBetter(bet, user) {
 }
 
 function renderBetActions(bet, canModify) {
-  if (!canModify || bet.status === 'paid') return '';
+  if (!canModify || bet.status === 'paid' || bet.status === 'declined') return '';
+
+  // BET CONFIRMATION
+  if (bet.status === 'confirming') {
+    const isOpponent = currentUser.username === bet.better2 || currentUser.isAdmin;
+    if (!isOpponent) {
+      return `
+        <div class="bet-actions-row">
+          <div class="verification-status">
+            <span class="verification-status__icon">⏳</span>
+            <span>Waiting for <strong>${bet.better2}</strong> to confirm</span>
+          </div>
+        </div>
+      `;
+    } else {
+      if (confirmingBetId == bet.id) {
+        return `
+          <div class="bet-actions-row">
+            <span class="action-label">Accept this bet?</span>
+            <div class="btn-group">
+              <button class="btn btn--xs btn--primary js-confirm-bet-action" data-id="${bet.id}" data-action="confirm">Accept</button>
+              <button class="btn btn--xs btn--outline js-confirm-bet-action" data-id="${bet.id}" data-action="decline" style="color: #ff4757; border-color: #ff4757;">Decline</button>
+              <button class="btn btn--xs btn--outline js-cancel-confirm-bet">Cancel</button>
+            </div>
+          </div>
+        `;
+      }
+      return `
+        <div class="bet-actions-row">
+          <span class="action-label">New Proposal</span>
+          <button class="btn btn--xs btn--primary js-start-confirm-bet" data-id="${bet.id}">Verify Bet</button>
+        </div>
+      `;
+    }
+  }
 
   const isWaitingForWinner = !bet.winnerLabel;
   // If winner determined but not paid, we are waiting for payment
@@ -661,7 +697,11 @@ function renderFilters() {
 function renderBetsList() {
   let filteredBets = bets;
   if (statusFilter !== 'all') {
-    filteredBets = filteredBets.filter(b => b.status === statusFilter);
+    if (statusFilter === 'pending') {
+      filteredBets = filteredBets.filter(b => b.status === 'pending' || b.status === 'confirming');
+    } else {
+      filteredBets = filteredBets.filter(b => b.status === statusFilter);
+    }
   }
   if (bettorFilter !== 'all') {
     filteredBets = filteredBets.filter(b => b.better1 === bettorFilter || b.better2 === bettorFilter);
@@ -1111,6 +1151,33 @@ async function handleResolveBet(winnerKey) {
   }
 }
 
+async function handleConfirmBet(betId, confirmAction) {
+  resolveBetId = betId;
+  resolveIsSubmitting = true;
+  render();
+
+  try {
+    await confirmBet(betId, confirmAction);
+
+    if (confirmAction === 'confirm') {
+      triggerConfetti('dice');
+    }
+
+    resolveBetId = null;
+    resolveIsSubmitting = false;
+
+    bets = await fetchBets();
+    memberStats = calculateMemberStats(bets);
+    overallStats = calculateOverallStats(bets);
+    render();
+
+  } catch (error) {
+    resolveIsSubmitting = false;
+    alert('Failed to ' + confirmAction + ' bet: ' + error.message);
+    render();
+  }
+}
+
 async function handleResolvePayment(betId) {
   resolveBetId = betId;
   resolveIsSubmitting = true;
@@ -1407,8 +1474,28 @@ if (app) {
     }
 
     // Cancel Resolution
-    if (e.target.matches('.cancel-resolve-btn')) {
+    if (e.target.closest('.cancel-resolve-btn')) {
       confirmingResolution = null;
+      render();
+    }
+
+    // Confirm Bet Action
+    const confirmBetBtn = e.target.closest('.js-start-confirm-bet');
+    if (confirmBetBtn) {
+      confirmingBetId = confirmBetBtn.dataset.id;
+      render();
+    }
+
+    const confirmActionBtn = e.target.closest('.js-confirm-bet-action');
+    if (confirmActionBtn) {
+      const betId = confirmActionBtn.dataset.id;
+      const confirmAction = confirmActionBtn.dataset.action;
+      confirmingBetId = null;
+      handleConfirmBet(betId, confirmAction);
+    }
+
+    if (e.target.closest('.js-cancel-confirm-bet')) {
+      confirmingBetId = null;
       render();
     }
 

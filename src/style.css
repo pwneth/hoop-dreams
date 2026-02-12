@@ -619,6 +619,16 @@ h4 {
   color: var(--status-paid);
 }
 
+.bet-card__status--confirming {
+  background: rgba(255, 159, 67, 0.1);
+  color: #ff9f43;
+}
+
+.bet-card__status--declined {
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+}
+
 .bet-card__matchup {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
