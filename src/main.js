@@ -79,6 +79,97 @@ function getInitials(name) {
 // RENDER COMPONENTS
 // ==========================================
 
+// Routing
+const BASE_URL = import.meta.env.BASE_URL || '/';
+
+function navigateTo(path) {
+  const normalizedBase = BASE_URL === '/' ? '' : BASE_URL.replace(/\/$/, '');
+  const target = normalizedBase + path;
+  window.history.pushState({}, '', target);
+  handleRoute();
+}
+
+function handleRoute() {
+  const path = window.location.pathname;
+  const normalizedBase = BASE_URL === '/' ? '' : BASE_URL.replace(/\/$/, '');
+
+  let internalPath = path;
+  if (path.startsWith(normalizedBase)) {
+    internalPath = path.substring(normalizedBase.length);
+  }
+
+  if (internalPath === '/' || internalPath === '/dashboard' || internalPath === '') {
+    currentView = 'dashboard';
+  } else if (internalPath === '/my-bets') {
+    currentView = 'my-bets';
+  } else if (internalPath === '/bets') {
+    currentView = 'bets';
+  } else if (internalPath === '/members') {
+    currentView = 'members';
+  } else {
+    // Default route
+    currentView = 'dashboard';
+    // Optionally replace state to clean URL, but careful with loop
+    if (internalPath !== '/' && internalPath !== '') {
+      window.history.replaceState({}, '', normalizedBase + '/');
+    }
+  }
+
+  render();
+  window.scrollTo(0, 0);
+}
+
+function renderMyBetsView() {
+  if (!currentUser) return '';
+
+  let myBets = bets.filter(b => b.better1 === currentUser.username || b.better2 === currentUser.username);
+
+  // Filter by status if needed
+  if (statusFilter !== 'all') {
+    myBets = myBets.filter(b => b.status === statusFilter);
+  }
+
+  // Reuse renderIndividualStats for the current user's summary
+  const statsHtml = renderIndividualStats(currentUser.username);
+
+  const filtersHtml = `
+    <div class="filters">
+      <button class="filter-btn ${statusFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+      <button class="filter-btn ${statusFilter === 'active' ? 'active' : ''}" data-filter="active">🟢 Active</button>
+      <button class="filter-btn ${statusFilter === 'paid' ? 'active' : ''}" data-filter="paid">✅ Paid</button>
+      <button class="filter-btn ${statusFilter === 'pending' ? 'active' : ''}" data-filter="pending">⏳ Pending</button>
+    </div>
+  `;
+
+  let betsHtml = '';
+  if (myBets.length === 0) {
+    betsHtml = `
+      <div class="empty-state">
+        <div class="empty-state__icon">🎲</div>
+        <p>No bets found matching criteria.</p>
+        ${statusFilter === 'all' ? '<button class="btn btn--primary js-new-bet-btn" style="margin-top: var(--space-md);">Place your first bet</button>' : ''}
+      </div>
+    `;
+  } else {
+    betsHtml = `
+      <div class="bets-grid">
+        ${myBets.map(bet => renderBetCard(bet)).join('')}
+      </div>
+    `;
+  }
+
+  return `
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">My Bets</h2>
+      </div>
+      ${filtersHtml}
+      ${statsHtml}
+      ${betsHtml}
+    </section>
+  `;
+}
+
 function renderHeader() {
   const user = currentUser || { username: 'Guest' };
 
@@ -93,13 +184,16 @@ function renderHeader() {
         
         <!-- Desktop Nav -->
         <nav class="header__nav desktop-only">
-          <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
+          <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
             Dashboard
           </button>
-          <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-view="bets">
+          <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
+            My Bets
+          </button>
+          <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
             All Bets
           </button>
-          <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-view="members">
+          <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
             Members
           </button>
           <button class="nav-btn nav-btn--primary js-new-bet-btn">
@@ -146,13 +240,16 @@ function renderMobileNav() {
         </div>
       </div>
       
-      <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
+      <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
         Dashboard
       </button>
-      <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-view="bets">
+      <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
+        My Bets
+      </button>
+      <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
         All Bets
       </button>
-      <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-view="members">
+      <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
         Members
       </button>
       <button class="nav-btn nav-btn--primary js-new-bet-btn">
@@ -682,6 +779,9 @@ function render() {
     case 'dashboard':
       mainContent = renderDashboardView();
       break;
+    case 'my-bets':
+      mainContent = renderMyBetsView();
+      break;
     case 'bets':
       mainContent = renderAllBetsView();
       break;
@@ -880,12 +980,12 @@ async function handleChangePasswordSubmit(e) {
 }
 
 function attachEventListeners() {
-  document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+  // Navigation
+  document.querySelectorAll('.nav-btn[data-path]').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const view = e.target.dataset.view;
-      if (view && view !== currentView) {
-        currentView = view;
-        render();
+      const path = e.target.dataset.path;
+      if (path && window.location.pathname !== path) {
+        navigateTo(path);
       }
     });
   });
@@ -900,6 +1000,8 @@ function attachEventListeners() {
       navOverlay.classList.toggle('active');
       hamburgerBtn.innerHTML = mainNav.classList.contains('active') ? '✕' : '☰';
     }
+    // Remove old listeners to prevent duplicates if any (though typically we re-render and re-attach)
+    // Actually hamburgerBtn is re-rendered in header, so it's fresh.
     hamburgerBtn.addEventListener('click', toggleMenu);
     navOverlay.addEventListener('click', toggleMenu);
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -938,6 +1040,7 @@ function attachEventListeners() {
     btn.addEventListener('click', () => {
       logout();
       currentUser = null;
+      window.history.replaceState({}, '', '/');
       init();
     });
   });
@@ -979,7 +1082,9 @@ function attachEventListeners() {
   if (dashNewBetBtn) dashNewBetBtn.addEventListener('click', () => { showNewBetModal = true; render(); });
 
   const dashViewAllBtn = document.getElementById('dashViewAllBtn');
-  if (dashViewAllBtn) dashViewAllBtn.addEventListener('click', () => { currentView = 'bets'; render(); });
+  if (dashViewAllBtn) dashViewAllBtn.addEventListener('click', () => {
+    navigateTo('/bets');
+  });
 
   // User Dropdown
   const userDropdownTrigger = document.getElementById('userDropdownTrigger');
@@ -993,6 +1098,9 @@ function attachEventListeners() {
 }
 
 async function init() {
+  // Handle popstate for back/forward navigation
+  window.addEventListener('popstate', handleRoute);
+
   if (!currentUser) {
     app.innerHTML = renderLoginScreen();
     const loginForm = document.getElementById('loginForm');
@@ -1002,12 +1110,11 @@ async function init() {
     return;
   }
 
-  app.innerHTML = `
-    ${renderHeader()}
-    <main class="main">
-      ${renderLoading()}
-    </main>
-  `;
+  // Set initial view based on URL
+  handleRoute();
+
+  const mainEl = document.querySelector('.main');
+  if (mainEl) mainEl.innerHTML = renderLoading();
 
   try {
     bets = await fetchBets();
@@ -1025,16 +1132,13 @@ async function init() {
         </div>
       </main>
     `;
-    // Re-attach logout listeners even on error
-    document.querySelectorAll('.js-logout-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        logout();
-        currentUser = null;
-        init();
-      });
-    });
+    // Re-attach listeners needed for logout
+    attachEventListeners();
   }
 }
+
+
+
 
 // Global click delegation for dynamic elements
 if (app) {
@@ -1042,11 +1146,9 @@ if (app) {
     // Leaderboard Click
     const leaderboardItem = e.target.closest('.leaderboard__item');
     if (leaderboardItem) {
-      currentView = 'bets';
       statusFilter = 'all';
       bettorFilter = leaderboardItem.dataset.bettor;
-      render();
-      window.scrollTo(0, 0);
+      navigateTo('/bets');
       return;
     }
 
