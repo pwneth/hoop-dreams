@@ -2,10 +2,10 @@
 // IMPORTANT: Replace this URL after deploying the Apps Script
 // See /google-apps-script/Code.gs for deployment instructions
 // NOTE: You MUST deploy the new version of Code.gs for this to work!
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyzOPbVaV-J2bPMEItv-FqrCtUBav2h48dUT3-qk7dqQG8126C2UM0Rgf5MthBvqYQ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLDt5uZXwYJQ0EtfTNAAk3j7BqFqqAt1o9dyOKOU1r51-pEvrxKTCJmI7iCy4zrPW7/exec';
 
-// Known league members (for dropdowns)
-export const LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
+// Known league members (populated from server, fallback to hardcoded)
+export let LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
 
 // Storage key for user session
 const USER_STORAGE_KEY = 'hd_bets_user';
@@ -207,6 +207,39 @@ export async function fetchBets() {
   }
 }
 
+/**
+ * Fetch users list from the server
+ */
+export async function fetchUsers() {
+  if (!currentUser) return LEAGUE_MEMBERS;
+
+  const params = new URLSearchParams({
+    action: 'getUsers',
+    username: currentUser.username,
+    password: currentUser.password
+  });
+
+  try {
+    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const result = await response.json();
+
+    if (result.success && result.data) {
+      // Ensure we only have an array of strings (usernames)
+      LEAGUE_MEMBERS = result.data.map(item => {
+        if (typeof item === 'object' && item !== null) {
+          return item.username || item.name || String(item);
+        }
+        return String(item);
+      }).filter(name => name && name.toLowerCase() !== 'pot');
+      return LEAGUE_MEMBERS;
+    }
+  } catch (e) {
+    console.error('Failed to fetch users:', e);
+  }
+  return LEAGUE_MEMBERS;
+}
+
 
 /**
  * Update bet status
@@ -261,36 +294,82 @@ export async function markBetAsPaid(betId) {
 
 function parseBetsFromAPI(data) {
   return data.map((row, index) => {
-    // Column names from the sheet (note lowercase 'bet', 'reward', etc.)
-    const better1Reward = parseCurrency(row['Better 1 reward'] || row['Reward 1'] || '');
-    const better2Reward = parseCurrency(row['Better 2 reward'] || row['Reward 2'] || '');
+    // Keys might be from headers (with spaces) or hardcoded in Code.gs (CamelCase)
+    // We check both.
+
+    // Rewards
+    const better1Reward = parseCurrency(
+      row['Better 1 reward'] || row['Reward 1'] || row['Better1Reward'] || ''
+    );
+    const better2Reward = parseCurrency(
+      row['Better 2 reward'] || row['Reward 2'] || row['Better2Reward'] || ''
+    );
 
     const rawStatus = row['Status'] || '';
-    const winner = row['Winner'] || '';
+    // Winner Label (Better 1 / Better 2)
+    const winnerLabel = row['Winner'] || row['WinnerLabel'] || '';
 
+    const better1 = row['Better 1'] || row['Better1'] || '';
+    const better2 = row['Better 2'] || row['Better2'] || '';
+
+    // Determine Logic Status
     let status = 'active';
-
     if (String(rawStatus).toLowerCase() === 'paid') {
       status = 'paid';
-    } else if (winner) {
-      status = 'pending';
+    } else if (winnerLabel) {
+      status = 'pending'; // Winner determined, but not paid
     }
 
+    // New Proposal Fields
+    const proposerWinner = row['proposerWinner'] || null;
+    const proposedWinnerValue = row['proposedWinnerValue'] || null;
+    const proposerPaid = row['proposerPaid'] || null;
+    const proposedPaidValue = row['proposedPaidValue'] || null;
+
+    // Winner Name Logic
+    let winnerName = row['Winner name'] || row['WinnerName'] || '';
+    if (!winnerName && winnerLabel) {
+      if (winnerLabel === 'Better 1') winnerName = better1;
+      else if (winnerLabel === 'Better 2') winnerName = better2;
+    }
+
+    // Loser Name Logic
+    let loserName = row['Loser name'] || row['LoserName'] || '';
+    if (!loserName && winnerLabel) {
+      if (winnerLabel === 'Better 1') loserName = better2;
+      else if (winnerLabel === 'Better 2') loserName = better1;
+    }
+
+    // Amount Logic
+    const amountWon = parseCurrency(row['Amount won'] || row['AmountWon']) ||
+      ((winnerLabel === 'Better 1' || winnerLabel === better1) ? better1Reward :
+        ((winnerLabel === 'Better 2' || winnerLabel === better2) ? better2Reward : 0));
+
+    const amountLost = parseCurrency(row['Amount lost'] || row['AmountLost']) ||
+      ((winnerLabel === 'Better 1' || winnerLabel === better1) ? better2Reward :
+        ((winnerLabel === 'Better 2' || winnerLabel === better2) ? better1Reward : 0));
+
     return {
-      id: index,
+      id: row.id !== undefined ? row.id : index,
       date: parseDate(row['Date'] || ''),
-      better1: row['Better 1'] || '',
-      better2: row['Better 2'] || '',
-      better1Bet: row['Better 1 bet'] || row['Bet 1'] || '',
-      better2Bet: row['Better 2 bet'] || row['Bet 2'] || '',
+      better1,
+      better2,
+      better1Bet: row['Better 1 bet'] || row['Bet 1'] || row['Better1Bet'] || '',
+      better2Bet: row['Better 2 bet'] || row['Bet 2'] || row['Better2Bet'] || '',
       better1Reward,
       better2Reward,
-      winner,
+      winnerLabel, // Store the raw label 'Better 1' etc
       status,
-      winnerName: row['Winner name'] || row['Winner'] || '',
-      amountWon: parseCurrency(row['Amount won'] || ''),
-      loserName: row['Loser name'] || '',
-      amountLost: parseCurrency(row['Amount lost'] || '')
+      winnerName,
+      amountWon,
+      loserName,
+      amountLost,
+
+      // Proposals
+      proposerWinner,
+      proposedWinnerValue,
+      proposerPaid,
+      proposedPaidValue
     };
   }).filter(bet => bet.better1 && bet.better2);
 }
@@ -381,11 +460,11 @@ export function calculateMemberStats(bets) {
     if ((bet.status === 'paid' || bet.status === 'pending') && bet.winnerName && bet.loserName) {
       if (stats[bet.winnerName]) {
         stats[bet.winnerName].wins++;
-        stats[bet.winnerName].totalWon += bet.amountWon;
+        stats[bet.winnerName].totalWon += bet.amountWon || 0;
       }
       if (stats[bet.loserName]) {
         stats[bet.loserName].losses++;
-        stats[bet.loserName].totalLost += bet.amountLost;
+        stats[bet.loserName].totalLost += bet.amountLost || 0;
       }
     }
   });

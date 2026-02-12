@@ -1,4 +1,5 @@
 import './style.css';
+import confetti from 'canvas-confetti';
 import {
   fetchBets,
   calculateMemberStats,
@@ -11,7 +12,8 @@ import {
   register,
   getCurrentUser,
   logout,
-  changePassword
+  changePassword,
+  fetchUsers
 } from './api.js';
 
 // Auth State
@@ -73,6 +75,76 @@ function formatDate(date) {
 
 function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+// Confetti Helpers
+function triggerConfetti(type = 'happy') {
+  const defaults = {
+    origin: { y: 0.7 },
+    zIndex: 2000
+  };
+
+  if (type === 'happy') {
+    confetti({
+      ...defaults,
+      particleCount: 100,
+      spread: 70,
+      colors: ['#6001D2', '#00D9A5', '#FFD700'],
+      shapes: ['circle', 'square'],
+      scalar: 1.2
+    });
+  } else if (type === 'sad') {
+    confetti({
+      ...defaults,
+      particleCount: 40,
+      spread: 50,
+      colors: ['#636e72', '#2d3436', '#ff4757'],
+      shapes: ['circle'],
+      scalar: 2,
+      ticks: 60,
+      gravity: 1.2
+    });
+    // Add custom emoji confetti for sad faces if supported by wrapper or just use multiple bursts
+    const end = Date.now() + 1000;
+    const emojis = ['😭', '😞', '📉', '💔'];
+
+    (function frame() {
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        shapes: ['circle'],
+        colors: ['#fff'],
+        scalar: 2
+      });
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        shapes: ['circle'],
+        colors: ['#fff'],
+        scalar: 2
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
+  } else if (type === 'dice') {
+    const scalar = 3;
+    const dice = confetti.shapeFromText({ text: '🎲', scalar });
+    const sparkle = confetti.shapeFromText({ text: '✨', scalar });
+
+    confetti({
+      ...defaults,
+      shapes: [dice, sparkle],
+      particleCount: 30,
+      spread: 80,
+      scalar
+    });
+  }
 }
 
 // ==========================================
@@ -163,6 +235,7 @@ function renderMyBetsView() {
       <div class="section__header">
         <h2 class="section__title">My Bets</h2>
       </div>
+      ${renderActionNeededSection()}
       ${filtersHtml}
       ${statsHtml}
       ${betsHtml}
@@ -170,14 +243,60 @@ function renderMyBetsView() {
   `;
 }
 
+function getPendingBets() {
+  if (!currentUser || !bets) return [];
+  return bets.filter(bet => {
+    if (bet.better1 !== currentUser.username && bet.better2 !== currentUser.username) return false;
+
+    const isWaitingForWinner = !bet.winnerLabel;
+    const isWaitingForPayment = !!bet.winnerLabel && bet.status !== 'paid';
+
+    if (isWaitingForWinner) {
+      if (bet.proposerWinner && bet.proposerWinner !== currentUser.username) return true;
+    } else if (isWaitingForPayment) {
+      if (bet.proposerPaid && bet.proposerPaid !== currentUser.username) return true;
+    }
+    return false;
+  });
+}
+
+function getPendingActionCount() {
+  return getPendingBets().length;
+}
+
+function renderActionNeededSection() {
+  const pendingBets = getPendingBets();
+  if (pendingBets.length === 0) return '';
+
+  return `
+      <section class="section" style="margin-bottom: var(--space-xl); background: rgba(255, 71, 87, 0.05); border: 1px solid rgba(255, 71, 87, 0.2); border-radius: var(--radius-lg); padding: var(--space-md);">
+        <div class="section__header" style="margin-bottom: var(--space-md);">
+           <h2 class="section__title" style="color: #ff4757; font-size: 1.25rem;"><span>⚠️</span> Action Needed</h2>
+        </div>
+        <div class="bets-grid">
+           ${pendingBets.map(bet => renderBetCard(bet)).join('')}
+        </div>
+      </section>
+    `;
+}
+
 function renderHeader() {
   const user = currentUser || { username: 'Guest' };
+  const pendingCount = getPendingActionCount();
+
+  let animationClass = '';
+  if (pendingCount > 0 && !window.hasAnimatedBadge) {
+    animationClass = 'animate-pop';
+    window.hasAnimatedBadge = true; // Mark as animated
+  }
+
+  const badgeHtml = pendingCount > 0 ? `<span class="nav-badge ${animationClass}">${pendingCount}</span>` : '';
 
   return `
     <header class="header">
       <div class="header__inner">
-        <div class="header__brand">
-          <img src="header_logo.png" class="header__logo-img" alt="HD Bets" />
+        <div class="header__brand js-logo-link" style="cursor: pointer;">
+          <img src="${BASE_URL}header_logo.png" class="header__logo-img" alt="HD Bets" />
           <span class="header__title">HD Bets!</span>
         </div>
         <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">☰</button>
@@ -188,7 +307,7 @@ function renderHeader() {
             Dashboard
           </button>
           <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
-            My Bets
+            My Bets ${badgeHtml}
           </button>
           <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
             All Bets
@@ -224,27 +343,26 @@ function renderHeader() {
           </div>
         </nav>
       </div>
+      <div class="nav-overlay" id="navOverlay"></div>
     </header>
   `;
 }
 
 function renderMobileNav() {
   const user = currentUser || { username: 'Guest' };
+  const pendingCount = getPendingActionCount();
+  const badgeHtml = pendingCount > 0 ? `<span class="nav-badge">${pendingCount}</span>` : '';
+
   return `
     <nav class="header__nav mobile-only" id="mainNav">
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md); display: flex; justify-content: center;">
-        <div class="user-badge">
-           <div class="user-badge__icon">${getInitials(user.username)}</div>
-           <span>${user.username}</span>
-           ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
-        </div>
+      <div class="js-logo-link" style="padding: var(--space-md); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md); display: flex; justify-content: center; cursor: pointer;">
+         <img src="${BASE_URL}header_logo.png" style="height: 40px;" alt="HD Bets" />
       </div>
-      
       <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
         Dashboard
       </button>
       <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
-        My Bets
+        My Bets ${badgeHtml}
       </button>
       <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
         All Bets
@@ -252,20 +370,17 @@ function renderMobileNav() {
       <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
         Members
       </button>
-      <button class="nav-btn nav-btn--primary js-new-bet-btn">
-        + New Bet
-      </button>
       
       <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);">
-        <button class="nav-btn js-change-pw-btn">
-          Change Password
-        </button>
-        <button class="nav-btn js-theme-toggle">
-          ${isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        </button>
-        <button class="nav-btn js-logout-btn" style="color: var(--text-muted);">
-          Logout ➜
-        </button>
+         <div class="user-badge" style="justify-content: center; margin-bottom: var(--space-md);">
+           <div class="user-badge__icon">${getInitials(user.username)}</div>
+           <span>${user.username}</span>
+         </div>
+         <button class="nav-btn js-new-bet-btn" style="background: var(--primary); color: white; justify-content: center;">Place New Bet</button>
+         <button class="nav-btn js-logout-btn" style="color: #ff4757; justify-content: center;">Log Out</button>
+         <button class="nav-btn js-theme-toggle" style="justify-content: center;">
+             ${isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+         </button>
       </div>
     </nav>
   `;
@@ -276,7 +391,7 @@ function renderLoginScreen() {
     <div class="login-container">
       <div class="login-card">
         <div class="login-card__header">
-          <img src="header_logo.png" class="login-card__logo-img" alt="HD Bets" />
+          <img src="${BASE_URL}header_logo.png" class="login-card__logo-img" alt="HD Bets" />
           <h1 class="login-card__title">HD Bets!</h1>
           <p class="login-card__subtitle">Fantasy Basketball Betting</p>
         </div>
@@ -376,6 +491,132 @@ function renderLeaderboard() {
   `;
 }
 
+function getOtherBetter(bet, user) {
+  if (!user) return { name: 'Opponent' };
+  return bet.better1 === user.username ? { name: bet.better2 } : { name: bet.better1 };
+}
+
+function renderBetActions(bet, canModify) {
+  if (!canModify || bet.status === 'paid') return '';
+
+  const isWaitingForWinner = !bet.winnerLabel;
+  // If winner determined but not paid, we are waiting for payment
+  const isWaitingForPayment = !!bet.winnerLabel && bet.status !== 'paid';
+
+  if (resolveIsSubmitting && resolveBetId == bet.id) {
+    return `
+      <div class="bet-actions-row">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div class="loading__spinner loading__spinner--sm"></div>
+          <span class="action-label">Updating...</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // WINNER RESOLUTION
+  if (isWaitingForWinner) {
+    if (bet.proposerWinner) {
+      if (bet.proposerWinner === currentUser.username) {
+        return `<div class="bet-actions-row"><div class="verification-status"><span class="verification-status__icon">⏳</span><span>Waiting for <strong>${getOtherBetter(bet, currentUser).name}</strong> to verify winner</span></div></div>`;
+      } else {
+        // Show Confirm UI
+        // Determine name of proposed winner
+        const proposedWinnerValue = bet.proposedWinnerValue;
+        const proposedWinnerName = proposedWinnerValue === 'better1' ? bet.better1 : bet.better2;
+
+        if (confirmingResolution && confirmingResolution.id == bet.id) {
+          return `
+                <div class="bet-actions-row">
+                  <span class="action-label">Confirm <b>${proposedWinnerName}</b> won?</span>
+                  <div class="btn-group">
+                    <button class="btn btn--xs btn--primary confirm-resolve-btn">Yes</button>
+                    <button class="btn btn--xs btn--outline cancel-resolve-btn">Cancel</button>
+                  </div>
+                </div>
+              `;
+        }
+
+        return `
+              <div class="bet-actions-row">
+                 <span class="action-label"><b>${bet.proposerWinner}</b> says <b>${proposedWinnerName}</b> won.</span>
+                 <button class="btn btn--xs btn--primary resolve-winner-btn" data-id="${bet.id}" data-winner="${proposedWinnerValue}">Verify Winner</button>
+              </div>
+           `;
+      }
+    } else {
+      // No proposal yet - Show generic Propose Winner buttons
+      if (confirmingResolution && confirmingResolution.id == bet.id) {
+        return `
+              <div class="bet-actions-row">
+                <span class="action-label">Confirm <b>${bet[confirmingResolution.winner]}</b> won?</span>
+                <div class="btn-group">
+                  <button class="btn btn--xs btn--primary confirm-resolve-btn">Yes</button>
+                  <button class="btn btn--xs btn--outline cancel-resolve-btn">Cancel</button>
+                </div>
+              </div>
+            `;
+      }
+      return `
+            <div class="bet-actions-row">
+              <span class="action-label">Who won?</span>
+              <div class="btn-group">
+                <button class="btn btn--xs btn--outline resolve-winner-btn" data-id="${bet.id}" data-winner="better1">${bet.better1}</button>
+                <button class="btn btn--xs btn--outline resolve-winner-btn" data-id="${bet.id}" data-winner="better2">${bet.better2}</button>
+              </div>
+            </div>
+        `;
+    }
+  }
+
+  // PAYMENT RESOLUTION
+  else if (isWaitingForPayment) {
+    if (bet.proposerPaid) {
+      if (bet.proposerPaid === currentUser.username) {
+        return `<div class="bet-actions-row"><div class="verification-status"><span class="verification-status__icon">💸</span><span>Waiting for <strong>${getOtherBetter(bet, currentUser).name}</strong> to verify payment</span></div></div>`;
+      } else {
+        if (confirmingPaymentId == bet.id) {
+          return `
+                  <div class="bet-actions-row">
+                    <span class="action-label">Confirm payment received?</span>
+                    <div class="btn-group">
+                      <button class="btn btn--xs btn--success confirm-payment-btn">Yes</button>
+                      <button class="btn btn--xs btn--outline cancel-payment-btn">Cancel</button>
+                    </div>
+                  </div>
+                `;
+        }
+        return `
+              <div class="bet-actions-row">
+                 <span class="action-label"><b>${bet.proposerPaid}</b> marked paid.</span>
+                 <button class="btn btn--xs btn--success resolve-payment-btn" data-id="${bet.id}">Verify Payment</button>
+              </div>
+           `;
+      }
+    } else {
+      // No proposal - Show Mark Paid
+      if (confirmingPaymentId == bet.id) {
+        return `
+              <div class="bet-actions-row">
+                <span class="action-label">Mark as paid?</span>
+                <div class="btn-group">
+                  <button class="btn btn--xs btn--success confirm-payment-btn">Yes</button>
+                  <button class="btn btn--xs btn--outline cancel-payment-btn">Cancel</button>
+                </div>
+              </div>
+            `;
+      }
+      return `
+            <div class="bet-actions-row">
+              <button class="btn btn--xs btn--primary resolve-payment-btn" data-id="${bet.id}">Mark Paid</button>
+            </div>
+         `;
+    }
+  }
+
+  return '';
+}
+
 function renderBetCard(bet) {
   const statusClass = `bet-card__status--${bet.status}`;
   const statusLabel = bet.status.charAt(0).toUpperCase() + bet.status.slice(1);
@@ -415,40 +656,7 @@ function renderBetCard(bet) {
           <div class="bet-card__stake">${formatCurrency(bet.better2Reward)}</div>
         </div>
       </div>
-      ${canModify && bet.status !== 'paid' ? `
-        <div style="margin-top: var(--space-md); border-top: 1px solid var(--glass-border); padding-top: 20px; padding-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-md);">
-          ${resolveIsSubmitting && resolveBetId == bet.id ? `
-            <div style="display: flex; align-items: center; gap: var(--space-sm);">
-              <div class="loading__spinner loading__spinner--sm"></div>
-              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Updating...</span>
-            </div>
-          ` : (bet.status === 'pending' ? `
-            ${confirmingPaymentId == bet.id ? `
-              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Confirm payment received?</span>
-              <div style="display: flex; gap: var(--space-xs);">
-                <button class="btn btn--xs btn--success confirm-payment-btn">Yes</button>
-                <button class="btn btn--xs btn--outline cancel-payment-btn">Cancel</button>
-              </div>
-            ` : `
-              <button class="btn btn--xs btn--primary resolve-payment-btn" data-id="${bet.id}">Resolve Payment</button>
-            `}
-          ` : (confirmingResolution && confirmingResolution.id == bet.id ? `
-            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
-              Confirm <b>${bet[confirmingResolution.winner]}</b> won?
-            </span>
-            <div style="display: flex; gap: var(--space-xs);">
-              <button class="btn btn--xs btn--primary confirm-resolve-btn">Yes</button>
-              <button class="btn btn--xs btn--outline cancel-resolve-btn">Cancel</button>
-            </div>
-          ` : `
-            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Resolve Winner:</span>
-            <div style="display: flex; gap: var(--space-xs);">
-              <button class="btn btn--xs btn--outline resolve-winner-btn" data-id="${bet.id}" data-winner="better1">${bet.better1}</button>
-              <button class="btn btn--xs btn--outline resolve-winner-btn" data-id="${bet.id}" data-winner="better2">${bet.better2}</button>
-            </div>
-          `))}
-        </div>
-      ` : ''}
+      ${renderBetActions(bet, canModify)}
     </div>
   `;
 }
@@ -542,6 +750,7 @@ function renderMembersView() {
 
 function renderDashboardView() {
   return `
+    ${renderActionNeededSection()}
     <div class="mobile-only-action">
       <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
     </div>
@@ -687,33 +896,34 @@ function renderChangePasswordModal() {
 function renderNewBetModal() {
   if (!showNewBetModal) return '';
 
-  const allBetters = [...new Set([...LEAGUE_MEMBERS])].filter(b => b !== 'Pot' && b !== currentUser.username);
-  const betterOptions = allBetters.map(m => `<option value="${m}">${m}</option>`).join('');
+  // Filter out 'Pot' from LEAGUE_MEMBERS if it's present, and then filter out the current user
+  const allBetters = [...new Set(LEAGUE_MEMBERS)].filter(b => b.toLowerCase() !== 'pot' && b !== currentUser.username);
+  const betterOptions = allBetters.map(m => {
+    const name = (typeof m === 'object' && m !== null) ? (m.username || m.name || 'User') : String(m);
+    return `<option value="${name}">${name}</option>`;
+  }).join('');
 
-  let overlayContent = '';
-  if (isSubmitting) {
-    overlayContent = `
-      <div class="modal-overlay-loader">
-        <div class="loading__spinner"></div>
-        <p style="margin-top: var(--space-md);">Saving bet...</p>
-      </div>
-    `;
-  } else if (submitSuccess) {
-    overlayContent = `
-      <div class="modal-overlay-success">
-        <div class="success-icon">✓</div>
-        <p class="success-text">Bet Placed Successfully!</p>
-      </div>
-    `;
-  }
-
-  // Pre-selected self
+  const loadingClass = isSubmitting ? 'is-loading' : '';
+  const successClass = submitSuccess ? 'is-success' : '';
   const me = currentUser.username;
 
   return `
-    <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-overlay ${loadingClass} ${successClass}" id="modalOverlay">
       <div class="modal" id="modalContainer">
-        ${overlayContent}
+        <!-- Loader Overlay -->
+        <div class="modal-overlay-loader">
+          <div class="basketball-loader">🏀</div>
+          <p style="margin-top: var(--space-lg); font-weight: 700; color: var(--text-primary); letter-spacing: 1px; font-size: 0.9rem;">LOCKING IN YOUR BET...</p>
+        </div>
+
+        <!-- Success Overlay -->
+        <div class="modal-overlay-success">
+          <div class="success-icon">🎲</div>
+          <p class="success-text">Bet Placed Successfully!</p>
+          <p class="success-subtext">Good luck to both bettors! May the best baller win. 🏀</p>
+        </div>
+
+        <!-- Main Form Content -->
         <div class="modal__header">
           <h2 class="modal__title">New Bet</h2>
           <button class="modal__close" id="closeModalBtn">&times;</button>
@@ -772,7 +982,7 @@ function renderNewBetModal() {
   `;
 }
 
-function render() {
+function render(target = 'all') {
   let mainContent = '';
 
   switch (currentView) {
@@ -790,16 +1000,39 @@ function render() {
       break;
   }
 
-  app.innerHTML = `
-    <div class="nav-overlay" id="navOverlay"></div>
-    ${renderMobileNav()}
-    ${renderHeader()}
-    <main class="main">
-      ${mainContent}
-    </main>
-    ${renderNewBetModal()}
-    ${renderChangePasswordModal()}
-  `;
+  if (target === 'all' || target === 'app') {
+    app.innerHTML = `
+      <div class="nav-overlay" id="navOverlay"></div>
+      ${renderMobileNav()}
+      ${renderHeader()}
+      <main class="main">
+        ${mainContent}
+      </main>
+    `;
+  }
+
+  if (target === 'all' || target === 'modals') {
+    const modalsEl = document.getElementById('modals');
+    const existingOverlay = document.getElementById('modalOverlay');
+
+    if (existingOverlay && showNewBetModal) {
+      // Surgically update the existing modal to avoid re-render flash
+      existingOverlay.classList.toggle('is-loading', isSubmitting);
+      existingOverlay.classList.toggle('is-success', submitSuccess);
+
+      const submitBtn = existingOverlay.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = isSubmitting;
+        submitBtn.textContent = isSubmitting ? 'Submitting...' : 'Place Bet';
+      }
+    } else if (modalsEl) {
+      // Re-render completely if no modal exists, OR if we need to remove one (showNewBetModal is false)
+      modalsEl.innerHTML = `
+        ${renderNewBetModal()}
+        ${renderChangePasswordModal()}
+      `;
+    }
+  }
 
   attachEventListeners();
 }
@@ -829,32 +1062,35 @@ async function handleNewBetSubmit(e) {
   }
 
   isSubmitting = true;
-  render();
+  render('modals');
 
   try {
     await createBet(betData);
-    isSubmitting = false;
     submitSuccess = true;
-    render();
+    isSubmitting = false;
+    render('modals');
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    triggerConfetti('dice');
 
-    submitSuccess = false;
-    showNewBetModal = false;
+    // Auto close modal after delay
+    setTimeout(async () => {
+      submitSuccess = false;
+      showNewBetModal = false;
 
-    bets = await fetchBets();
-    memberStats = calculateMemberStats(bets);
-    overallStats = calculateOverallStats(bets);
-    render();
+      bets = await fetchBets();
+      memberStats = calculateMemberStats(bets);
+      overallStats = calculateOverallStats(bets);
+      render('all'); // Full refresh now that bet is finalized
 
-    const newBetCard = document.querySelector('.bet-card');
-    if (newBetCard) {
-      newBetCard.classList.add('animate-new-bet');
-    }
+      const newBetCard = document.querySelector('.bet-card');
+      if (newBetCard) {
+        newBetCard.classList.add('animate-new-bet');
+      }
+    }, 3000);
 
   } catch (error) {
     isSubmitting = false;
-    render();
+    render('modals');
     const errorEl = document.getElementById('newBetError');
     if (errorEl) {
       errorEl.textContent = 'Failed to create bet: ' + error.message;
@@ -870,10 +1106,15 @@ async function handleResolveBet(winnerKey) {
   render();
 
   try {
-    // Convert internal key to Sheet value logic 
-    // Wait, the API now handles 'better1' or 'better2' internally based on row data
-    // so we can just pass 'better1' or 'better2' string
+    const bet = bets.find(b => b.id == resolveBetId);
     await updateBet(resolveBetId, winnerKey);
+
+    const winnerName = winnerKey.toLowerCase() === 'better1' ? bet.better1 : bet.better2;
+    if (winnerName === currentUser.username) {
+      triggerConfetti('happy');
+    } else {
+      triggerConfetti('sad');
+    }
 
     showResolveModal = false;
     resolveBetId = null;
@@ -898,6 +1139,14 @@ async function handleResolvePayment(betId) {
 
   try {
     await markBetAsPaid(betId);
+
+    // Only trigger happy confetti for the person receiving the money (the winner)
+    // Actually, marking paid is usually done by the winner to confirm receipt
+    const bet = bets.find(b => b.id == resolveBetId);
+    if (bet && bet.winnerName === currentUser.username) {
+      triggerConfetti('happy');
+    }
+
     resolveBetId = null;
     resolveIsSubmitting = false;
 
@@ -987,6 +1236,12 @@ function attachEventListeners() {
       if (path && window.location.pathname !== path) {
         navigateTo(path);
       }
+    });
+  });
+
+  document.querySelectorAll('.js-logo-link').forEach(link => {
+    link.addEventListener('click', () => {
+      navigateTo('/');
     });
   });
 
@@ -1117,6 +1372,7 @@ async function init() {
   if (mainEl) mainEl.innerHTML = renderLoading();
 
   try {
+    await fetchUsers();
     bets = await fetchBets();
     memberStats = calculateMemberStats(bets);
     overallStats = calculateOverallStats(bets);
