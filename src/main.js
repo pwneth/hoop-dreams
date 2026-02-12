@@ -94,44 +94,23 @@ function triggerConfetti(type = 'happy') {
       scalar: 1.2
     });
   } else if (type === 'sad') {
+    const scalar = 4;
+    const shapes = [
+      confetti.shapeFromText({ text: '😭', scalar }),
+      confetti.shapeFromText({ text: '😞', scalar }),
+      confetti.shapeFromText({ text: '💔', scalar }),
+      confetti.shapeFromText({ text: '📉', scalar })
+    ];
+
     confetti({
       ...defaults,
+      shapes,
       particleCount: 40,
-      spread: 50,
-      colors: ['#636e72', '#2d3436', '#ff4757'],
-      shapes: ['circle'],
-      scalar: 2,
-      ticks: 60,
-      gravity: 1.2
+      spread: 60,
+      scalar,
+      gravity: 1.2,
+      ticks: 150
     });
-    // Add custom emoji confetti for sad faces if supported by wrapper or just use multiple bursts
-    const end = Date.now() + 1000;
-    const emojis = ['😭', '😞', '📉', '💔'];
-
-    (function frame() {
-      confetti({
-        particleCount: 2,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        shapes: ['circle'],
-        colors: ['#fff'],
-        scalar: 2
-      });
-      confetti({
-        particleCount: 2,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        shapes: ['circle'],
-        colors: ['#fff'],
-        scalar: 2
-      });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    }());
   } else if (type === 'dice') {
     const scalar = 3;
     const dice = confetti.shapeFromText({ text: '🎲', scalar });
