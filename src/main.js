@@ -732,17 +732,17 @@ function renderBetsList() {
 
   if (filteredBets.length === 0) {
     return `
-  < div class="empty-state" >
+      <div class="empty-state">
         <div class="empty-state__icon">🎲</div>
         <p>No bets found</p>
-      </div >
-  `;
+      </div>
+    `;
   }
 
   return `
-  < div class="bets-grid" >
-    ${filteredBets.map(bet => renderBetCard(bet)).join('')}
-    </div >
+    <div class="bets-grid">
+      ${filteredBets.map(bet => renderBetCard(bet)).join('')}
+    </div>
   `;
 }
 
@@ -753,7 +753,7 @@ function renderMemberCard(member) {
   const profitSign = member.netProfit > 0 ? '+' : '';
 
   return `
-  < div class="member-card" >
+    <div class="member-card">
       <div class="member-card__header">
         <div class="member-card__avatar">${getInitials(member.name)}</div>
         <div>
@@ -775,7 +775,7 @@ function renderMemberCard(member) {
           <div class="member-card__stat-label">Active</div>
         </div>
       </div>
-    </div >
+    </div>
   `;
 }
 
@@ -784,9 +784,9 @@ function renderMembersView() {
     return '<div class="empty-state"><div class="empty-state__icon">👥</div>No members found</div>';
   }
   return `
-  < div class="member-grid" >
-    ${memberStats.map(member => renderMemberCard(member)).join('')}
-    </div >
+    <div class="member-grid">
+      ${memberStats.map(member => renderMemberCard(member)).join('')}
+    </div>
   `;
 }
 
@@ -819,7 +819,7 @@ function renderIndividualStats(name) {
   const netColor = member.netProfit >= 0 ? 'var(--status-active)' : '#ff4757';
 
   return `
-  < div class="stats-grid" >
+    <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-card__label">Total Bets</div>
         <div class="stat-card__value">${totalBets}</div>
@@ -840,38 +840,38 @@ function renderIndividualStats(name) {
         <div class="stat-card__label">Net</div>
         <div class="stat-card__value" style="color: ${netColor};">${profitSign}${formatCurrency(member.netProfit)}</div>
       </div>
-    </div >
+    </div>
   `;
 }
 
 function renderAllBetsView() {
   const statsHtml = bettorFilter === 'all' ? renderStatsCards() : renderIndividualStats(bettorFilter);
   return `
-  < section class="section" >
-    <div class="section__header">
-      <h2 class="section__title">All Bets</h2>
-    </div>
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">All Bets</h2>
+      </div>
       ${renderFilters()}
       ${statsHtml}
       ${renderBetsList()}
-    </section >
+    </section>
   `;
 }
 
 function renderAllMembersView() {
   return `
-  < section class="section" >
-    <div class="section__header">
-      <h2 class="section__title"><span>👥</span> Member Statistics</h2>
-    </div>
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title"><span>👥</span> Member Statistics</h2>
+      </div>
       ${renderMembersView()}
-    </section >
+    </section>
   `;
 }
 
 function renderLoading() {
   return `
-  < div style = "max-width: 1400px; margin: 0 auto;" >
+    <div style="max-width: 1400px; margin: 0 auto;">
       <div class="skeleton-section-title skeleton"></div>
       <div class="skeleton-leaderboard">
         ${Array(5).fill(0).map(() => `
@@ -900,14 +900,14 @@ function renderLoading() {
           </div>
         `).join('')}
       </div>
-    </div >
+    </div>
   `;
 }
 
 function renderChangePasswordModal() {
   if (!showChangePasswordModal) return '';
   return `
-  < div class="modal-overlay" id = "pwModalOverlay" >
+  <div class="modal-overlay" id="pwModalOverlay">
     <div class="modal">
       <div class="modal__header">
         <h2 class="modal__title">Change Password</h2>
@@ -931,7 +931,7 @@ function renderChangePasswordModal() {
         </div>
       </form>
     </div>
-    </div >
+    </div>
   `;
 }
 
@@ -942,7 +942,7 @@ function renderNewBetModal() {
   const allBetters = [...new Set(LEAGUE_MEMBERS)].filter(b => b.toLowerCase() !== 'pot' && b !== currentUser.username);
   const betterOptions = allBetters.map(m => {
     const name = (typeof m === 'object' && m !== null) ? (m.username || m.name || 'User') : String(m);
-    return `< option value = "${name}" > ${name}</option > `;
+    return `<option value="${name}">${name}</option>`;
   }).join('');
 
   const loadingClass = isSubmitting ? 'is-loading' : '';
@@ -950,7 +950,7 @@ function renderNewBetModal() {
   const me = currentUser.username;
 
   return `
-  < div class="modal-overlay ${loadingClass} ${successClass}" id = "modalOverlay" >
+  <div class="modal-overlay ${loadingClass} ${successClass}" id="modalOverlay">
     <div class="modal" id="modalContainer">
       <!-- Loader Overlay -->
       <div class="modal-overlay-loader">
@@ -1020,7 +1020,7 @@ function renderNewBetModal() {
         </div>
       </form>
     </div>
-    </div >
+    </div>
   `;
 }
 
@@ -1044,13 +1044,13 @@ function render(target = 'all') {
 
   if (target === 'all' || target === 'app') {
     app.innerHTML = `
-  < div class="nav-overlay" id = "navOverlay" ></div >
-    ${renderMobileNav()}
+      <div class="nav-overlay" id="navOverlay"></div>
+      ${renderMobileNav()}
       ${renderHeader()}
-<main class="main">
-  ${mainContent}
-</main>
-`;
+      <main class="main">
+        ${mainContent}
+      </main>
+    `;
   }
 
   if (target === 'all' || target === 'modals') {
