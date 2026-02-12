@@ -229,7 +229,11 @@ function getPendingBets() {
   return bets.filter(bet => {
     if (bet.better1 !== currentUser.username && bet.better2 !== currentUser.username) return false;
 
-    const isWaitingForWinner = !bet.winnerLabel;
+    if (bet.status === 'confirming') {
+      if (bet.better2 === currentUser.username) return true;
+    }
+
+    const isWaitingForWinner = !bet.winnerLabel && bet.status !== 'confirming';
     const isWaitingForPayment = !!bet.winnerLabel && bet.status !== 'paid';
 
     if (isWaitingForWinner) {
