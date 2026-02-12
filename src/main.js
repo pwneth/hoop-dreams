@@ -179,7 +179,11 @@ function renderMyBetsView() {
 
   // Filter by status if needed
   if (statusFilter !== 'all') {
-    myBets = myBets.filter(b => b.status === statusFilter);
+    if (statusFilter === 'pending') {
+      myBets = myBets.filter(b => b.status === 'pending' || b.status === 'confirming');
+    } else {
+      myBets = myBets.filter(b => b.status === statusFilter);
+    }
   }
 
   // Reuse renderIndividualStats for the current user's summary
@@ -216,7 +220,6 @@ function renderMyBetsView() {
       <div class="section__header">
         <h2 class="section__title">My Bets</h2>
       </div>
-      ${renderActionNeededSection()}
       ${filtersHtml}
       ${statsHtml}
       ${betsHtml}
