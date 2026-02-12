@@ -1,137 +1,264 @@
 // Google Apps Script Web App URL
 // IMPORTANT: Replace this URL after deploying the Apps Script
 // See /google-apps-script/Code.gs for deployment instructions
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwE2F_ulPHsvCxSRrGje-vh69uek5XXWr_EGoav2O22GSjRAziaWETtfbGdkkbE5l5p/exec';
+// NOTE: You MUST deploy the new version of Code.gs for this to work!
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyzOPbVaV-J2bPMEItv-FqrCtUBav2h48dUT3-qk7dqQG8126C2UM0Rgf5MthBvqYQ/exec';
 
-// Known league members
+// Known league members (for dropdowns)
 export const LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
 
-// Storage key for password
-const PASSWORD_STORAGE_KEY = 'hd_bets_auth';
+// Storage key for user session
+const USER_STORAGE_KEY = 'hd_bets_user';
 
-// Store password - load from localStorage on init
-let currentPassword = localStorage.getItem(PASSWORD_STORAGE_KEY) || '';
+// Store user session in memory
+let currentUser = tryLoadUser();
 
-/**
- * Set the current password for API requests (and persist to localStorage)
- */
-export function setPassword(password) {
-  currentPassword = password;
-  if (password) {
-    localStorage.setItem(PASSWORD_STORAGE_KEY, password);
-  } else {
-    localStorage.removeItem(PASSWORD_STORAGE_KEY);
+function tryLoadUser() {
+  try {
+    const data = localStorage.getItem(USER_STORAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch (e) {
+    return null;
   }
 }
 
 /**
- * Get current password
+ * Get current user
  */
-export function getPassword() {
-  return currentPassword;
+export function getCurrentUser() {
+  return currentUser;
 }
 
 /**
- * Verify password with Apps Script
+ * Set current user
  */
-export async function verifyPassword(password) {
+export function setCurrentUser(user) {
+  currentUser = user;
+  if (user) {
+    // Store username and password (hashed/raw) locally for persistent login
+    // In a real app, we'd store a token. Here we store the credentials 
+    // to send with every request since GAS is stateless.
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_STORAGE_KEY);
+  }
+}
+
+/**
+ * Logout
+ */
+export function logout() {
+  setCurrentUser(null);
+}
+
+/**
+ * Login
+ */
+export async function login(username, password) {
   try {
     const params = new URLSearchParams({
-      action: 'verify',
+      action: 'login',
+      username: username,
       password: password
     });
 
     const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
     const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const result = await response.json();
 
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        setPassword(password); // Use setPassword to persist to localStorage
-        return true;
-      }
+    if (result.success && result.user) {
+      // Store the password in the user object for future requests
+      // This is necessary because the stateless API needs auth data for every write operation
+      const userWithAuth = {
+        ...result.user, // username, isAdmin
+        password: password
+      };
+      setCurrentUser(userWithAuth);
+      return userWithAuth;
+    } else {
+      throw new Error(result.error || 'Login failed');
     }
-    return false;
   } catch (error) {
-    console.error('Error verifying password:', error);
-    return false;
+    console.error('Login error:', error);
+    throw error;
   }
 }
 
 /**
- * Create a new bet via Apps Script (requires password)
+ * Register
+ */
+export async function register(username, password) {
+  try {
+    const params = new URLSearchParams({
+      action: 'register',
+      username: username,
+      password: password
+    });
+
+    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const result = await response.json();
+
+    if (result.success && result.user) {
+      const userWithAuth = {
+        ...result.user,
+        password: password
+      };
+      setCurrentUser(userWithAuth);
+      return userWithAuth;
+    } else {
+      throw new Error(result.error || 'Registration failed');
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Change Password
+ */
+export async function changePassword(oldPassword, newPassword) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  try {
+    const params = new URLSearchParams({
+      action: 'changePassword',
+      username: currentUser.username,
+      oldPassword: oldPassword,
+      newPassword: newPassword
+    });
+
+    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const result = await response.json();
+
+    if (result.success) {
+      // Update local storage with new password
+      const updatedUser = { ...currentUser, password: newPassword };
+      setCurrentUser(updatedUser);
+      return true;
+    } else {
+      throw new Error(result.error || 'Failed to change password');
+    }
+  } catch (error) {
+    console.error('Change password error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new bet
  */
 export async function createBet(betData) {
-  if (!currentPassword) {
-    throw new Error('Not authenticated');
+  if (!currentUser) throw new Error('Not authenticated');
+
+  const params = new URLSearchParams({
+    action: 'addBet',
+    username: currentUser.username,
+    password: currentUser.password,
+    better1: betData.better1,
+    better2: betData.better2,
+    better1Bet: betData.better1Bet,
+    better2Bet: betData.better2Bet,
+    better1Reward: betData.better1Reward,
+    better2Reward: betData.better2Reward
+  });
+
+  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+  const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to create bet');
   }
-
-  try {
-    const params = new URLSearchParams({
-      action: 'addBet',
-      password: currentPassword,
-      better1: betData.better1,
-      better2: betData.better2,
-      better1Bet: betData.better1Bet,
-      better2Bet: betData.better2Bet,
-      better1Reward: betData.better1Reward.toString(),
-      better2Reward: betData.better2Reward.toString()
-    });
-
-    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
-    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
-
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        return result;
-      } else {
-        throw new Error(result.error || 'Failed to create bet');
-      }
-    } else {
-      throw new Error('Network error');
-    }
-  } catch (error) {
-    console.error('Error creating bet:', error);
-    throw error;
-  }
+  return result;
 }
 
 /**
- * Fetch bets from Apps Script (requires password)
+ * Fetch bets (now public read, but API structure might require params? No, doGet defaults to getBets)
  */
 export async function fetchBets() {
-  if (!currentPassword) {
-    throw new Error('Not authenticated');
-  }
+  // We can fetch bets without auth if we want, but let's pass it if available
+  // Actually, doGet requires auth in my new script?
+  // "const user = authenticate..." is only for modify actions or if I strictly protected read.
+  // In `handleRequest`: `if (action === 'getBets') return getBets(sheet);`
+  // But before that: `const user = authenticate...`
+  // Wait, I put `authenticate` check BEFORE `getBets`.
+  // So READ IS PROTECTED.
+  // I need to pass creds.
 
-  try {
-    const params = new URLSearchParams({
-      password: currentPassword
-    });
+  if (!currentUser) return []; // Or throw error? Let's return empty if not logged in
 
-    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
-    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+  const params = new URLSearchParams({
+    action: 'getBets',
+    username: currentUser.username,
+    password: currentUser.password
+  });
 
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success && result.data) {
-        return parseBetsFromAPI(result.data).reverse();
-      } else {
-        throw new Error(result.error || 'Failed to fetch bets');
-      }
-    } else {
-      throw new Error('Network error');
-    }
-  } catch (error) {
-    console.error('Error fetching bets:', error);
-    throw error;
+  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+  const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+  const result = await response.json();
+
+  if (result.success && result.data) {
+    return parseBetsFromAPI(result.data).reverse();
+  } else {
+    throw new Error(result.error || 'Failed to fetch bets');
   }
 }
 
+
 /**
- * Parse bets from API response
+ * Update bet status
  */
+export async function updateBet(betId, winner) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  const params = new URLSearchParams({
+    action: 'updateBet',
+    rowId: betId,
+    winner: winner,
+    username: currentUser.username,
+    password: currentUser.password
+  });
+
+  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+  const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to update bet');
+  }
+  return result;
+}
+
+/**
+ * Mark a bet as paid
+ */
+export async function markBetAsPaid(betId) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  const params = new URLSearchParams({
+    action: 'markPaid',
+    rowId: betId,
+    username: currentUser.username,
+    password: currentUser.password
+  });
+
+  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
+  const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to mark bet as paid');
+  }
+  return result;
+}
+
+// ----------------------------------------------------------------------
+// Parsing Logic (Unchanged)
+// ----------------------------------------------------------------------
+
 function parseBetsFromAPI(data) {
   return data.map((row, index) => {
     // Column names from the sheet (note lowercase 'bet', 'reward', etc.)
@@ -141,10 +268,6 @@ function parseBetsFromAPI(data) {
     const rawStatus = row['Status'] || '';
     const winner = row['Winner'] || '';
 
-    // Status logic based on Sheet data:
-    // 1. If Status is "Paid" -> paid
-    // 2. If Winner is set but not paid -> pending
-    // 3. If no winner and not paid -> active
     let status = 'active';
 
     if (String(rawStatus).toLowerCase() === 'paid') {
@@ -163,7 +286,7 @@ function parseBetsFromAPI(data) {
       better1Reward,
       better2Reward,
       winner,
-      status, // Normalized status
+      status,
       winnerName: row['Winner name'] || row['Winner'] || '',
       amountWon: parseCurrency(row['Amount won'] || ''),
       loserName: row['Loser name'] || '',
@@ -172,7 +295,6 @@ function parseBetsFromAPI(data) {
   }).filter(bet => bet.better1 && bet.better2);
 }
 
-// Column indices from the sheet
 const COLUMNS = {
   DATE: 0,
   BETTER_1: 1,
@@ -189,78 +311,20 @@ const COLUMNS = {
   AMOUNT_LOST: 12
 };
 
-/**
- * Parse CSV text into array of arrays
- */
-function parseCSV(text) {
-  const rows = [];
-  let currentRow = [];
-  let currentCell = '';
-  let insideQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const nextChar = text[i + 1];
-
-    if (char === '"') {
-      if (insideQuotes && nextChar === '"') {
-        currentCell += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if (char === ',' && !insideQuotes) {
-      currentRow.push(currentCell.trim());
-      currentCell = '';
-    } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-      if (char === '\r' && nextChar === '\n') {
-        i++;
-      }
-      currentRow.push(currentCell.trim());
-      if (currentRow.length > 1 || currentRow[0] !== '') {
-        rows.push(currentRow);
-      }
-      currentRow = [];
-      currentCell = '';
-    } else {
-      currentCell += char;
-    }
-  }
-
-  if (currentCell || currentRow.length > 0) {
-    currentRow.push(currentCell.trim());
-    rows.push(currentRow);
-  }
-
-  return rows;
-}
-
-/**
- * Parse currency string to number
- */
 function parseCurrency(value) {
   if (!value && value !== 0) return 0;
-  // Convert to string in case API returns a number
   const strValue = String(value);
   const cleaned = strValue.replace(/[€$,]/g, '').trim();
   return parseFloat(cleaned) || 0;
 }
 
-/**
- * Parse date string to Date object
- */
 function parseDate(dateStr) {
   if (!dateStr) return null;
-  // Convert to string in case API returns a different type
   const strDate = String(dateStr);
-
-  // Try parsing as ISO date first (API returns: 2025-09-17T22:00:00.000Z)
   const isoDate = new Date(strDate);
   if (!isNaN(isoDate.getTime())) {
     return isoDate;
   }
-
-  // Handle format: DD-MMM-YYYY (e.g., "18-Sep-2025") for manually added bets
   const parts = strDate.split('-');
   if (parts.length === 3 && isNaN(parseInt(parts[1]))) {
     const months = {
@@ -275,51 +339,11 @@ function parseDate(dateStr) {
       return new Date(year, month, day);
     }
   }
-
   return null;
 }
 
-/**
- * Convert a row to a bet object
- */
-function rowToBet(row, index) {
-  const date = parseDate(row[COLUMNS.DATE]);
-  const status = row[COLUMNS.STATUS] || '';
-  const winner = row[COLUMNS.WINNER] || '';
-
-  let betStatus = 'active';
-  if (status.toLowerCase() === 'paid') {
-    betStatus = 'paid';
-  } else if (winner && winner.toLowerCase().includes('better')) {
-    betStatus = 'pending';
-  }
-
-  return {
-    id: index,
-    date: date,
-    dateStr: row[COLUMNS.DATE] || '',
-    better1: row[COLUMNS.BETTER_1] || '',
-    better2: row[COLUMNS.BETTER_2] || '',
-    better1Bet: row[COLUMNS.BETTER_1_BET] || '',
-    better2Bet: row[COLUMNS.BETTER_2_BET] || '',
-    better1Reward: parseCurrency(row[COLUMNS.BETTER_1_REWARD]),
-    better2Reward: parseCurrency(row[COLUMNS.BETTER_2_REWARD]),
-    winner: winner,
-    status: betStatus,
-    winnerName: row[COLUMNS.WINNER_NAME] || '',
-    amountWon: parseCurrency(row[COLUMNS.AMOUNT_WON]),
-    loserName: row[COLUMNS.LOSER_NAME] || '',
-    amountLost: parseCurrency(row[COLUMNS.AMOUNT_LOST])
-  };
-}
-
-/**
- * Calculate member statistics from bets
- */
 export function calculateMemberStats(bets) {
   const stats = {};
-
-  // Initialize stats for all unique members
   bets.forEach(bet => {
     [bet.better1, bet.better2].forEach(name => {
       if (name && name !== 'Pot') {
@@ -331,26 +355,29 @@ export function calculateMemberStats(bets) {
             totalWon: 0,
             totalLost: 0,
             activeBets: 0,
-            totalBets: 0
+            totalBets: 0,
+            potentialGain: 0
           };
         }
       }
     });
   });
 
-  // Calculate stats from completed bets
   bets.forEach(bet => {
-    // Count active bets
     if (bet.status === 'active') {
-      if (stats[bet.better1]) stats[bet.better1].activeBets++;
-      if (stats[bet.better2]) stats[bet.better2].activeBets++;
+      if (stats[bet.better1]) {
+        stats[bet.better1].activeBets++;
+        stats[bet.better1].potentialGain += bet.better1Reward || 0;
+      }
+      if (stats[bet.better2]) {
+        stats[bet.better2].activeBets++;
+        stats[bet.better2].potentialGain += bet.better2Reward || 0;
+      }
     }
 
-    // Count total bets
     if (stats[bet.better1]) stats[bet.better1].totalBets++;
     if (stats[bet.better2]) stats[bet.better2].totalBets++;
 
-    // Process completed bets (paid or resolved/pending)
     if ((bet.status === 'paid' || bet.status === 'pending') && bet.winnerName && bet.loserName) {
       if (stats[bet.winnerName]) {
         stats[bet.winnerName].wins++;
@@ -363,7 +390,6 @@ export function calculateMemberStats(bets) {
     }
   });
 
-  // Convert to array and calculate net profit
   return Object.values(stats)
     .map(s => ({
       ...s,
@@ -375,9 +401,6 @@ export function calculateMemberStats(bets) {
     .sort((a, b) => b.netProfit - a.netProfit);
 }
 
-/**
- * Calculate overall statistics
- */
 export function calculateOverallStats(bets) {
   const activeBets = bets.filter(b => b.status === 'active').length;
   const completedBets = bets.filter(b => b.status === 'paid').length;
@@ -393,71 +416,6 @@ export function calculateOverallStats(bets) {
     activeBets,
     completedBets,
     pendingBets,
-    totalVolume: totalVolume / 2 // Divide by 2 since we added both sides
+    totalVolume: totalVolume / 2
   };
-}
-
-/**
- * Update bet status (Active -> Paid)
- * @param {number} betId - The row index of the bet
- * @param {string} winner - 'better1' or 'better2'
- */
-export async function updateBet(betId, winner) {
-  if (!currentPassword) {
-    throw new Error('Not authenticated');
-  }
-
-  const params = new URLSearchParams({
-    action: 'updateBet',
-    password: currentPassword,
-    rowId: betId,
-    winner: winner
-  });
-
-  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
-
-  try {
-    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
-    if (!response.ok) throw new Error('Network error');
-
-    const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to update bet');
-    }
-    return result;
-  } catch (error) {
-    console.error('Error updating bet:', error);
-    throw error;
-  }
-}
-
-/**
- * Mark a bet as paid in Apps Script
- */
-export async function markBetAsPaid(betId) {
-  if (!currentPassword) {
-    throw new Error('Not authenticated');
-  }
-
-  const params = new URLSearchParams({
-    action: 'markPaid',
-    password: currentPassword,
-    rowId: betId
-  });
-
-  const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
-
-  try {
-    const response = await fetch(url, { method: 'GET', redirect: 'follow' });
-    if (!response.ok) throw new Error('Network error');
-
-    const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to mark bet as paid');
-    }
-    return result;
-  } catch (error) {
-    console.error('Error marking bet as paid:', error);
-    throw error;
-  }
 }

@@ -1,8 +1,22 @@
 import './style.css';
-import { fetchBets, calculateMemberStats, calculateOverallStats, createBet, updateBet, markBetAsPaid, LEAGUE_MEMBERS, verifyPassword, setPassword, getPassword } from './api.js';
+import {
+  fetchBets,
+  calculateMemberStats,
+  calculateOverallStats,
+  createBet,
+  updateBet,
+  markBetAsPaid,
+  LEAGUE_MEMBERS,
+  login,
+  register,
+  getCurrentUser,
+  logout,
+  changePassword
+} from './api.js';
 
-// Auth State - check if we have a stored password
-let isAuthenticated = !!getPassword();
+// Auth State
+let currentUser = getCurrentUser();
+let authMode = 'login'; // 'login' or 'register'
 
 // App State
 let currentView = 'dashboard';
@@ -10,18 +24,18 @@ let bets = [];
 let memberStats = [];
 let overallStats = {};
 let statusFilter = 'all';
-let bettorFilter = 'all'; // Filter bets by bettor name
+let bettorFilter = 'all';
+
+// UI State
 let showNewBetModal = false;
 let isSubmitting = false;
 let submitSuccess = false;
 let showResolveModal = false;
 let resolveBetId = null;
 let resolveIsSubmitting = false;
-let confirmingResolution = null; // { id: number, winner: string }
-let confirmingPaymentId = null; // id of bet being confirmed for payment
-let selectedBetter1 = ''; // Track selected better 1 for dynamic labels
-let selectedBetter2 = ''; // Track selected better 2 for dynamic labels
-let customBetters = []; // Track custom betters added by user
+let confirmingResolution = null;
+let confirmingPaymentId = null;
+let showChangePasswordModal = false;
 
 // Theme State
 const THEME_STORAGE_KEY = 'hd_bets_theme';
@@ -33,7 +47,6 @@ function applyTheme() {
 }
 applyTheme();
 
-// Toggle theme function
 function toggleTheme() {
   isDarkMode = !isDarkMode;
   localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
@@ -44,12 +57,11 @@ function toggleTheme() {
 // DOM Elements
 const app = document.getElementById('app');
 
-// Format currency
+// Helpers
 function formatCurrency(amount) {
   return `€${amount.toFixed(2)}`;
 }
 
-// Format date
 function formatDate(date) {
   if (!date) return 'N/A';
   return date.toLocaleDateString('en-GB', {
@@ -59,13 +71,17 @@ function formatDate(date) {
   });
 }
 
-// Get initials from name
 function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-// Render Header
+// ==========================================
+// RENDER COMPONENTS
+// ==========================================
+
 function renderHeader() {
+  const user = currentUser || { username: 'Guest' };
+
   return `
     <header class="header">
       <div class="header__inner">
@@ -89,22 +105,47 @@ function renderHeader() {
           <button class="nav-btn nav-btn--primary js-new-bet-btn">
             + New Bet
           </button>
-          <button class="nav-btn js-theme-toggle" title="Toggle theme" style="font-size: 1.25rem; padding: 0.5rem;">
-            ${isDarkMode ? '☀️' : '🌙'}
-          </button>
-          <button class="nav-btn js-logout-btn" title="Logout" style="color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
-            Logout ➜
-          </button>
+          
+          <div class="header__user">
+             <div class="user-dropdown" id="userDropdownTrigger">
+               <div class="user-badge" title="Logged in as ${user.username}">
+                 <div class="user-badge__icon">${getInitials(user.username)}</div>
+                 <span>${user.username}</span>
+                 ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
+                 <span style="font-size: 0.7em; margin-left: 4px; opacity: 0.5;">▼</span>
+               </div>
+               
+               <div class="user-dropdown-menu" id="userDropdownMenu">
+                 <button class="user-dropdown-item js-change-pw-btn">
+                   <span>🔑</span> Change Password
+                 </button>
+                 <button class="user-dropdown-item js-theme-toggle">
+                   <span>${isDarkMode ? '☀️' : '🌙'}</span> ${isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                 </button>
+                 <button class="user-dropdown-item js-logout-btn" style="color: #ff4757;">
+                   <span>➜</span> Logout
+                 </button>
+               </div>
+             </div>
+          </div>
         </nav>
       </div>
     </header>
   `;
 }
 
-// Render Mobile Nav (outside header for z-index layering)
 function renderMobileNav() {
+  const user = currentUser || { username: 'Guest' };
   return `
     <nav class="header__nav mobile-only" id="mainNav">
+      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md); display: flex; justify-content: center;">
+        <div class="user-badge">
+           <div class="user-badge__icon">${getInitials(user.username)}</div>
+           <span>${user.username}</span>
+           ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
+        </div>
+      </div>
+      
       <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
         Dashboard
       </button>
@@ -117,17 +158,22 @@ function renderMobileNav() {
       <button class="nav-btn nav-btn--primary js-new-bet-btn">
         + New Bet
       </button>
-      <button class="nav-btn js-theme-toggle" title="Toggle theme" style="font-size: 1.25rem; padding: 0.5rem;">
-        ${isDarkMode ? '☀️' : '🌙'}
-      </button>
-      <button class="nav-btn js-logout-btn" title="Logout" style="color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
-        Logout ➜
-      </button>
+      
+      <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);">
+        <button class="nav-btn js-change-pw-btn">
+          Change Password
+        </button>
+        <button class="nav-btn js-theme-toggle">
+          ${isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        </button>
+        <button class="nav-btn js-logout-btn" style="color: var(--text-muted);">
+          Logout ➜
+        </button>
+      </div>
     </nav>
   `;
 }
 
-// Render Login Screen
 function renderLoginScreen() {
   return `
     <div class="login-container">
@@ -137,16 +183,26 @@ function renderLoginScreen() {
           <h1 class="login-card__title">HD Bets!</h1>
           <p class="login-card__subtitle">Fantasy Basketball Betting</p>
         </div>
+        
+        <div class="auth-toggle">
+          <div class="auth-toggle__btn ${authMode === 'login' ? 'active' : ''}" onclick="window.setAuthMode('login')">Login</div>
+          <div class="auth-toggle__btn ${authMode === 'register' ? 'active' : ''}" onclick="window.setAuthMode('register')">Register</div>
+        </div>
+
         <form class="login-form" id="loginForm">
           <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input type="text" class="form-input" name="username" placeholder="Enter your first name" style="text-transform: capitalize;" required autofocus />
+          </div>
+          <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-input" name="password" placeholder="Enter password" required autofocus />
+            <input type="password" class="form-input" name="password" placeholder="Enter password" required />
           </div>
-          <div class="login-error" id="loginError" style="display: none;">
-            Invalid password
-          </div>
+          
+          <div class="login-error" id="loginError" style="display: none;"></div>
+          
           <button type="submit" class="btn btn--primary btn--full">
-            Login
+            ${authMode === 'login' ? 'Login' : 'Create Account'}
           </button>
         </form>
       </div>
@@ -154,7 +210,16 @@ function renderLoginScreen() {
   `;
 }
 
-// Render Stats Cards
+// Window global for inline onclick (simplified)
+window.setAuthMode = (mode) => {
+  authMode = mode;
+  const loginApp = document.getElementById('app');
+  if (loginApp) loginApp.innerHTML = renderLoginScreen();
+  // Re-attach listener
+  const form = document.getElementById('loginForm');
+  if (form) form.addEventListener('submit', handleAuthSubmit);
+};
+
 function renderStatsCards() {
   return `
     <div class="stats-grid">
@@ -178,7 +243,6 @@ function renderStatsCards() {
   `;
 }
 
-// Render Leaderboard
 function renderLeaderboard() {
   if (memberStats.length === 0) {
     return '<div class="empty-state"><div class="empty-state__icon">📊</div>No data available</div>';
@@ -197,6 +261,7 @@ function renderLeaderboard() {
         <div class="leaderboard__rank ${rankClass}">${rank}</div>
         <div class="leaderboard__name">${member.name}</div>
         <div class="leaderboard__stats">${member.wins}W - ${member.losses}L (${member.winRate}%)</div>
+        <div class="leaderboard__potential">${member.potentialGain > 0 ? formatCurrency(member.potentialGain) : '-'}</div>
         <div class="leaderboard__profit ${profitClass}">${profitSign}${formatCurrency(member.netProfit)}</div>
       </div>
     `;
@@ -214,18 +279,19 @@ function renderLeaderboard() {
   `;
 }
 
-// Render Bet Card
 function renderBetCard(bet) {
   const statusClass = `bet-card__status--${bet.status}`;
   const statusLabel = bet.status.charAt(0).toUpperCase() + bet.status.slice(1);
-
   const isWinner1 = bet.winnerName === bet.better1;
   const isWinner2 = bet.winnerName === bet.better2;
-
   const side1Class = isWinner1 ? 'bet-card__side--winner' : (isWinner2 ? 'bet-card__side--loser' : '');
   const side2Class = isWinner2 ? 'bet-card__side--winner' : (isWinner1 ? 'bet-card__side--loser' : '');
-
   const cardClass = isWinner1 ? 'bet-card--winner-1' : (isWinner2 ? 'bet-card--winner-2' : '');
+
+  // Authorization Check
+  const isAdmin = currentUser && currentUser.isAdmin;
+  const isParticipant = currentUser && (currentUser.username === bet.better1 || currentUser.username === bet.better2);
+  const canModify = isAdmin || isParticipant;
 
   return `
     <div class="bet-card ${cardClass}">
@@ -252,7 +318,7 @@ function renderBetCard(bet) {
           <div class="bet-card__stake">${formatCurrency(bet.better2Reward)}</div>
         </div>
       </div>
-      ${isAuthenticated && bet.status !== 'paid' ? `
+      ${canModify && bet.status !== 'paid' ? `
         <div style="margin-top: var(--space-md); border-top: 1px solid var(--glass-border); padding-top: 20px; padding-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-md);">
           ${resolveIsSubmitting && resolveBetId == bet.id ? `
             <div style="display: flex; align-items: center; gap: var(--space-sm);">
@@ -290,9 +356,7 @@ function renderBetCard(bet) {
   `;
 }
 
-// Render Filters
 function renderFilters() {
-  // Get unique bettors from all bets
   const allBettors = [...new Set(bets.flatMap(b => [b.better1, b.better2]))].filter(b => b !== 'Pot').sort();
   const bettorOptions = allBettors.map(b => `<option value="${b}" ${bettorFilter === b ? 'selected' : ''}>${b}</option>`).join('');
 
@@ -310,16 +374,11 @@ function renderFilters() {
   `;
 }
 
-// Render Bets List
 function renderBetsList() {
   let filteredBets = bets;
-
-  // Apply status filter
   if (statusFilter !== 'all') {
     filteredBets = filteredBets.filter(b => b.status === statusFilter);
   }
-
-  // Apply bettor filter
   if (bettorFilter !== 'all') {
     filteredBets = filteredBets.filter(b => b.better1 === bettorFilter || b.better2 === bettorFilter);
   }
@@ -340,7 +399,6 @@ function renderBetsList() {
   `;
 }
 
-// Render Member Card
 function renderMemberCard(member) {
   const profitClass = member.netProfit > 0 ? 'leaderboard__profit--positive' :
     member.netProfit < 0 ? 'leaderboard__profit--negative' :
@@ -374,12 +432,10 @@ function renderMemberCard(member) {
   `;
 }
 
-// Render Members View
 function renderMembersView() {
   if (memberStats.length === 0) {
     return '<div class="empty-state"><div class="empty-state__icon">👥</div>No members found</div>';
   }
-
   return `
     <div class="member-grid">
       ${memberStats.map(member => renderMemberCard(member)).join('')}
@@ -387,15 +443,12 @@ function renderMembersView() {
   `;
 }
 
-// Render Dashboard View
 function renderDashboardView() {
   return `
     <div class="mobile-only-action">
       <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
     </div>
-
     ${renderLeaderboard()}
-
     <section class="section">
       <div class="section__header">
         <h2 class="section__title"><span>🔥</span> Recent Bets</h2>
@@ -410,11 +463,9 @@ function renderDashboardView() {
   `;
 }
 
-// Render Individual Stats Bar
 function renderIndividualStats(name) {
   const member = memberStats.find(m => m.name === name);
   if (!member) return '';
-
   const totalBets = (member.wins || 0) + (member.losses || 0) + (member.activeBets || 0);
   const profitSign = member.netProfit > 0 ? '+' : '';
   const netColor = member.netProfit >= 0 ? 'var(--status-active)' : '#ff4757';
@@ -434,6 +485,10 @@ function renderIndividualStats(name) {
         <div class="stat-card__value" style="color: #ff4757;">${member.losses}</div>
       </div>
       <div class="stat-card">
+        <div class="stat-card__label">Potential</div>
+        <div class="stat-card__value" style="color: var(--text-secondary);">${formatCurrency(member.potentialGain || 0)}</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-card__label">Net</div>
         <div class="stat-card__value" style="color: ${netColor};">${profitSign}${formatCurrency(member.netProfit)}</div>
       </div>
@@ -441,10 +496,8 @@ function renderIndividualStats(name) {
   `;
 }
 
-// Render All Bets View
 function renderAllBetsView() {
   const statsHtml = bettorFilter === 'all' ? renderStatsCards() : renderIndividualStats(bettorFilter);
-
   return `
     <section class="section">
       <div class="section__header">
@@ -457,7 +510,6 @@ function renderAllBetsView() {
   `;
 }
 
-// Render All Members View
 function renderAllMembersView() {
   return `
     <section class="section">
@@ -469,22 +521,76 @@ function renderAllMembersView() {
   `;
 }
 
-// Render Loading State
 function renderLoading() {
   return `
-    <div class="loading">
-      <div class="loading__spinner"></div>
-      <p>Loading bets...</p>
+    <div style="max-width: 1400px; margin: 0 auto;">
+      <div class="skeleton-section-title skeleton"></div>
+      <div class="skeleton-leaderboard">
+        ${Array(5).fill(0).map(() => `
+          <div class="skeleton-lb-row">
+            <div class="skeleton-lb-rank skeleton"></div>
+            <div class="skeleton-lb-name skeleton"></div>
+            <div class="skeleton-lb-stats skeleton"></div>
+            <div class="skeleton-lb-potential skeleton"></div>
+            <div class="skeleton-lb-profit skeleton"></div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="skeleton-section-title skeleton" style="margin-top: var(--space-2xl);"></div>
+      <div class="bets-grid">
+        ${Array(3).fill(0).map(() => `
+          <div class="skeleton-bet-card">
+            <div class="skeleton-card-header">
+              <div class="skeleton-date skeleton"></div>
+              <div class="skeleton-status skeleton"></div>
+            </div>
+            <div class="skeleton-matchup">
+              <div class="skeleton-side-box skeleton"></div>
+              <div class="skeleton-vs"></div>
+              <div class="skeleton-side-box skeleton"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
     </div>
   `;
 }
 
-// Render New Bet Modal
+function renderChangePasswordModal() {
+  if (!showChangePasswordModal) return '';
+  return `
+    <div class="modal-overlay" id="pwModalOverlay">
+      <div class="modal">
+        <div class="modal__header">
+          <h2 class="modal__title">Change Password</h2>
+          <button class="modal__close" id="closePwModalBtn">&times;</button>
+        </div>
+        <form class="modal__form" id="changePwForm">
+          <div class="form-group">
+            <label class="form-label">Old Password</label>
+            <input type="password" class="form-input" name="oldPassword" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" class="form-input" name="newPassword" required />
+          </div>
+          
+          <div class="error-message" id="pwError" style="margin-top: 1rem; display: none;"></div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn--secondary" id="cancelPwBtn">Cancel</button>
+            <button type="submit" class="btn btn--primary">Change Password</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
 function renderNewBetModal() {
   if (!showNewBetModal) return '';
 
-  // Combine league members with any custom betters
-  const allBetters = [...new Set([...LEAGUE_MEMBERS, ...customBetters])].filter(b => b !== 'Pot');
+  const allBetters = [...new Set([...LEAGUE_MEMBERS])].filter(b => b !== 'Pot' && b !== currentUser.username);
   const betterOptions = allBetters.map(m => `<option value="${m}">${m}</option>`).join('');
 
   let overlayContent = '';
@@ -504,9 +610,8 @@ function renderNewBetModal() {
     `;
   }
 
-  // Dynamic labels based on selection
-  const better1Label = selectedBetter1 || 'Bettor 1';
-  const better2Label = selectedBetter2 || 'Bettor 2';
+  // Pre-selected self
+  const me = currentUser.username;
 
   return `
     <div class="modal-overlay" id="modalOverlay">
@@ -519,17 +624,15 @@ function renderNewBetModal() {
         <p id="newBetError" class="error-message" style="margin: 0 var(--space-lg); display: none;"></p>
         <form class="modal__form" id="newBetForm">
           <div class="form-group" style="margin-bottom: var(--space-lg);">
-            <label class="form-label" style="display: block; margin-bottom: var(--space-sm);">Who's Betting?</label>
+            <label class="form-label" style="display: block; margin-bottom: var(--space-sm);">Who are you betting against?</label>
             <div class="betters-row" style="display: flex; align-items: center; gap: var(--space-md);">
-              <select class="form-select" name="better1" id="better1Select" style="flex: 1;" required>
-                <option value="">Select bettor...</option>
-                <option value="__new__">+ Add New Bettor</option>
-                ${betterOptions}
-              </select>
+              <div style="flex: 1; padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--radius-md); text-align: center; font-weight: 700; border: 1px solid var(--border-medium);">
+                ${me} (You)
+                <input type="hidden" name="better1" value="${me}" />
+              </div>
               <span style="font-weight: 700; color: var(--text-muted); flex-shrink: 0;">VS</span>
               <select class="form-select" name="better2" id="better2Select" style="flex: 1;" required>
-                <option value="">Select bettor...</option>
-                <option value="__new__">+ Add New Bettor</option>
+                <option value="">Select opponent...</option>
                 ${betterOptions}
               </select>
             </div>
@@ -537,22 +640,25 @@ function renderNewBetModal() {
           
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" id="better1BetLabel">${better1Label}'s Bet</label>
-              <textarea class="form-textarea" name="better1Bet" placeholder="e.g. Knicks win the championship" required></textarea>
+              <label class="form-label">Your Bet</label>
+              <textarea class="form-textarea" name="better1Bet" placeholder="e.g. Knicks win" required></textarea>
             </div>
             <div class="form-group">
-              <label class="form-label" id="better2BetLabel">${better2Label}'s Bet</label>
-              <textarea class="form-textarea" name="better2Bet" placeholder="e.g. Knicks don't win the championship" required></textarea>
+              <label class="form-label">Opponent's Bet</label>
+              <textarea class="form-textarea" name="better2Bet" placeholder="e.g. Knicks lose" required></textarea>
             </div>
           </div>
           
           <div class="form-row">
+             <!-- Shared Stakes for now, or assume equal stakes? -->
+             <!-- The user said: "people cannot make bets for other people" -->
+             <!-- We'll keep separate stakes inputs but label them clearly -->
             <div class="form-group">
-              <label class="form-label" id="better1StakesLabel">${better1Label}'s Stakes (€)</label>
+              <label class="form-label">Your Stake (€)</label>
               <input type="number" class="form-input" name="better1Reward" min="1" step="0.01" placeholder="20.00" required />
             </div>
             <div class="form-group">
-              <label class="form-label" id="better2StakesLabel">${better2Label}'s Stakes (€)</label>
+              <label class="form-label">Opponent's Stake (€)</label>
               <input type="number" class="form-input" name="better2Reward" min="1" step="0.01" placeholder="20.00" required />
             </div>
           </div>
@@ -569,7 +675,6 @@ function renderNewBetModal() {
   `;
 }
 
-// Main Render Function
 function render() {
   let mainContent = '';
 
@@ -593,153 +698,18 @@ function render() {
       ${mainContent}
     </main>
     ${renderNewBetModal()}
-    ${renderResolveModal()}
+    ${renderChangePasswordModal()}
   `;
 
-  // Attach event listeners
   attachEventListeners();
 }
 
-// Handle form submission
-// Helper to update only the labels without full re-render (no flicker)
-function updateLabelsOnly() {
-  const better1Label = selectedBetter1 || 'Bettor 1';
-  const better2Label = selectedBetter2 || 'Bettor 2';
-
-  const better1BetLabel = document.getElementById('better1BetLabel');
-  const better2BetLabel = document.getElementById('better2BetLabel');
-  const better1StakesLabel = document.getElementById('better1StakesLabel');
-  const better2StakesLabel = document.getElementById('better2StakesLabel');
-
-  if (better1BetLabel) better1BetLabel.textContent = `${better1Label}'s Bet`;
-  if (better2BetLabel) better2BetLabel.textContent = `${better2Label}'s Bet`;
-  if (better1StakesLabel) better1StakesLabel.textContent = `${better1Label}'s Stakes (€)`;
-  if (better2StakesLabel) better2StakesLabel.textContent = `${better2Label}'s Stakes (€)`;
-}
-
-// Helper to update only the modal without full re-render
-function updateModalOnly() {
-  const overlay = document.getElementById('modalOverlay');
-  if (overlay) {
-    // Preserve form values before re-render
-    const form = document.getElementById('newBetForm');
-    const formValues = {};
-    if (form) {
-      const formData = new FormData(form);
-      for (const [key, value] of formData.entries()) {
-        formValues[key] = value;
-      }
-    }
-
-    overlay.outerHTML = renderNewBetModal();
-
-    // Restore form values after re-render
-    const newForm = document.getElementById('newBetForm');
-    if (newForm) {
-      Object.entries(formValues).forEach(([key, value]) => {
-        const el = newForm.elements[key];
-        if (el && value) {
-          el.value = value;
-        }
-      });
-    }
-
-    // Re-attach listeners
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    if (closeModalBtn) {
-      closeModalBtn.addEventListener('click', () => {
-        showNewBetModal = false;
-        selectedBetter1 = '';
-        selectedBetter2 = '';
-        render();
-      });
-    }
-
-    const cancelBetBtn = document.getElementById('cancelBetBtn');
-    if (cancelBetBtn) {
-      cancelBetBtn.addEventListener('click', () => {
-        showNewBetModal = false;
-        selectedBetter1 = '';
-        selectedBetter2 = '';
-        render();
-      });
-    }
-
-    if (newForm) {
-      newForm.addEventListener('submit', handleNewBetSubmit);
-    }
-
-    const newOverlay = document.getElementById('modalOverlay');
-    if (newOverlay) {
-      newOverlay.addEventListener('click', (e) => {
-        if (e.target === newOverlay) {
-          showNewBetModal = false;
-          selectedBetter1 = '';
-          selectedBetter2 = '';
-          render();
-        }
-      });
-    }
-
-    // Attach better selection handlers
-    const better1Select = document.getElementById('better1Select');
-    const better2Select = document.getElementById('better2Select');
-
-    if (better1Select) {
-      better1Select.addEventListener('change', (e) => {
-        if (e.target.value === '__new__') {
-          const newName = prompt('Enter new better name:');
-          if (newName && newName.trim()) {
-            const trimmedName = newName.trim();
-            if (!customBetters.includes(trimmedName)) {
-              customBetters.push(trimmedName);
-            }
-            selectedBetter1 = trimmedName;
-            updateModalOnly();
-            const select = document.getElementById('better1Select');
-            if (select) select.value = trimmedName;
-          } else {
-            e.target.value = selectedBetter1 || '';
-          }
-        } else {
-          selectedBetter1 = e.target.value;
-          updateLabelsOnly();
-        }
-      });
-    }
-
-    if (better2Select) {
-      better2Select.addEventListener('change', (e) => {
-        if (e.target.value === '__new__') {
-          const newName = prompt('Enter new better name:');
-          if (newName && newName.trim()) {
-            const trimmedName = newName.trim();
-            if (!customBetters.includes(trimmedName)) {
-              customBetters.push(trimmedName);
-            }
-            selectedBetter2 = trimmedName;
-            updateModalOnly();
-            const select = document.getElementById('better2Select');
-            if (select) select.value = trimmedName;
-          } else {
-            e.target.value = selectedBetter2 || '';
-          }
-        } else {
-          selectedBetter2 = e.target.value;
-          updateLabelsOnly();
-        }
-      });
-    }
-  }
-}
-
-// Handle New Bet Submission
 async function handleNewBetSubmit(e) {
   e.preventDefault();
-
   const formData = new FormData(e.target);
+
   const betData = {
-    better1: formData.get('better1'),
+    better1: currentUser.username, // Force self
     better2: formData.get('better2'),
     better1Bet: formData.get('better1Bet'),
     better2Bet: formData.get('better2Bet'),
@@ -747,43 +717,36 @@ async function handleNewBetSubmit(e) {
     better2Reward: parseFloat(formData.get('better2Reward'))
   };
 
-  // Clear previous errors
   const errorEl = document.getElementById('newBetError');
   if (errorEl) errorEl.style.display = 'none';
 
-  // Validate different bettors
-  if (betData.better1 === betData.better2) {
+  if (!betData.better2) {
     if (errorEl) {
-      errorEl.textContent = 'Please select two different betters for the bet!';
+      errorEl.textContent = 'Please select an opponent!';
       errorEl.style.display = 'block';
     }
     return;
   }
 
   isSubmitting = true;
-  updateModalOnly(); // Prevent flickering by updating only modal
+  render();
 
   try {
     await createBet(betData);
-
-    // Show success animation
     isSubmitting = false;
     submitSuccess = true;
-    updateModalOnly(); // Update only modal
+    render();
 
-    // Wait for animation
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     submitSuccess = false;
     showNewBetModal = false;
 
-    // Refresh bets
     bets = await fetchBets();
     memberStats = calculateMemberStats(bets);
     overallStats = calculateOverallStats(bets);
     render();
 
-    // Animate the new bet (first one)
     const newBetCard = document.querySelector('.bet-card');
     if (newBetCard) {
       newBetCard.classList.add('animate-new-bet');
@@ -791,7 +754,7 @@ async function handleNewBetSubmit(e) {
 
   } catch (error) {
     isSubmitting = false;
-    updateModalOnly(); // Reset modal state
+    render();
     const errorEl = document.getElementById('newBetError');
     if (errorEl) {
       errorEl.textContent = 'Failed to create bet: ' + error.message;
@@ -800,10 +763,123 @@ async function handleNewBetSubmit(e) {
   }
 }
 
-// Attach Event Listeners
+async function handleResolveBet(winnerKey) {
+  if (!resolveBetId && resolveBetId !== 0) return;
+
+  resolveIsSubmitting = true;
+  render();
+
+  try {
+    // Convert internal key to Sheet value logic 
+    // Wait, the API now handles 'better1' or 'better2' internally based on row data
+    // so we can just pass 'better1' or 'better2' string
+    await updateBet(resolveBetId, winnerKey);
+
+    showResolveModal = false;
+    resolveBetId = null;
+    resolveIsSubmitting = false;
+
+    bets = await fetchBets();
+    memberStats = calculateMemberStats(bets);
+    overallStats = calculateOverallStats(bets);
+    render();
+
+  } catch (error) {
+    resolveIsSubmitting = false;
+    alert('Failed to update bet: ' + error.message);
+    render();
+  }
+}
+
+async function handleResolvePayment(betId) {
+  resolveBetId = betId;
+  resolveIsSubmitting = true;
+  render();
+
+  try {
+    await markBetAsPaid(betId);
+    resolveBetId = null;
+    resolveIsSubmitting = false;
+
+    bets = await fetchBets();
+    memberStats = calculateMemberStats(bets);
+    overallStats = calculateOverallStats(bets);
+    render();
+
+  } catch (error) {
+    resolveIsSubmitting = false;
+    alert('Failed to mark as paid: ' + error.message);
+    render();
+  }
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  let username = formData.get('username') ? formData.get('username').trim() : '';
+
+  // Capitalize first letter logic
+  if (username) {
+    username = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
+  }
+
+  const password = formData.get('password');
+  const errorEl = document.getElementById('loginError');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  if (submitBtn) {
+    submitBtn.textContent = 'Processing...';
+    submitBtn.disabled = true;
+  }
+
+  if (errorEl) errorEl.style.display = 'none';
+
+  try {
+    if (authMode === 'login') {
+      await login(username, password);
+    } else {
+      await register(username, password);
+    }
+
+    // Auth successful, reload state
+    currentUser = getCurrentUser();
+    init();
+
+  } catch (error) {
+    if (errorEl) {
+      errorEl.textContent = error.message;
+      errorEl.style.display = 'block';
+    }
+    if (submitBtn) {
+      submitBtn.textContent = authMode === 'login' ? 'Login' : 'Create Account';
+      submitBtn.disabled = false;
+    }
+  }
+}
+
+async function handleChangePasswordSubmit(e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const oldPassword = formData.get('oldPassword');
+  const newPassword = formData.get('newPassword');
+  const errorEl = document.getElementById('pwError');
+
+  if (errorEl) errorEl.style.display = 'none';
+
+  try {
+    await changePassword(oldPassword, newPassword);
+    alert('Password changed successfully!');
+    showChangePasswordModal = false;
+    render();
+  } catch (error) {
+    if (errorEl) {
+      errorEl.textContent = error.message;
+      errorEl.style.display = 'block';
+    }
+  }
+}
+
 function attachEventListeners() {
-  // Navigation
-  // Navigation use data-view attribute, exclude shared buttons which have specific listeners
   document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const view = e.target.dataset.view;
@@ -814,7 +890,6 @@ function attachEventListeners() {
     });
   });
 
-  // Mobile Menu Toggle
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const mainNav = document.getElementById('mainNav');
   const navOverlay = document.getElementById('navOverlay');
@@ -825,21 +900,15 @@ function attachEventListeners() {
       navOverlay.classList.toggle('active');
       hamburgerBtn.innerHTML = mainNav.classList.contains('active') ? '✕' : '☰';
     }
-
     hamburgerBtn.addEventListener('click', toggleMenu);
     navOverlay.addEventListener('click', toggleMenu);
-
-    // Close menu when any nav button is clicked
     document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (mainNav.classList.contains('active')) {
-          toggleMenu();
-        }
+        if (mainNav.classList.contains('active')) toggleMenu();
       });
     });
   }
 
-  // Filters
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const filter = e.target.dataset.filter;
@@ -850,7 +919,6 @@ function attachEventListeners() {
     });
   });
 
-  // Bettor Filter
   const bettorFilterSelect = document.getElementById('bettorFilterSelect');
   if (bettorFilterSelect) {
     bettorFilterSelect.addEventListener('change', (e) => {
@@ -859,190 +927,77 @@ function attachEventListeners() {
     });
   }
 
-  // New Bet Button
   document.querySelectorAll('.js-new-bet-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       showNewBetModal = true;
-      selectedBetter1 = '';
-      selectedBetter2 = '';
       render();
     });
   });
 
-  // Dashboard specific buttons
-  const dashNewBetBtn = document.getElementById('dashNewBetBtn');
-  if (dashNewBetBtn) {
-    dashNewBetBtn.addEventListener('click', () => {
-      showNewBetModal = true;
-      selectedBetter1 = '';
-      selectedBetter2 = '';
+  document.querySelectorAll('.js-logout-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      logout();
+      currentUser = null;
+      init();
+    });
+  });
+
+  document.querySelectorAll('.js-change-pw-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showChangePasswordModal = true;
       render();
     });
-  }
+  });
 
-  const dashViewAllBtn = document.getElementById('dashViewAllBtn');
-  if (dashViewAllBtn) {
-    dashViewAllBtn.addEventListener('click', () => {
-      currentView = 'bets';
-      render();
-    });
-  }
+  document.querySelectorAll('.js-theme-toggle').forEach(btn => {
+    btn.addEventListener('click', toggleTheme);
+  });
 
-  // Modal controls
+  // Modals
   const closeModalBtn = document.getElementById('closeModalBtn');
   const cancelBetBtn = document.getElementById('cancelBetBtn');
   const modalOverlay = document.getElementById('modalOverlay');
   const newBetForm = document.getElementById('newBetForm');
-  const better1Select = document.getElementById('better1Select');
-  const better2Select = document.getElementById('better2Select');
 
-  if (closeModalBtn) {
-    closeModalBtn.addEventListener('click', () => {
-      showNewBetModal = false;
-      selectedBetter1 = '';
-      selectedBetter2 = '';
-      render();
+  if (closeModalBtn) closeModalBtn.addEventListener('click', () => { showNewBetModal = false; render(); });
+  if (cancelBetBtn) cancelBetBtn.addEventListener('click', () => { showNewBetModal = false; render(); });
+  if (modalOverlay) modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) { showNewBetModal = false; render(); } });
+  if (newBetForm) newBetForm.addEventListener('submit', handleNewBetSubmit);
+
+  // Password Modal
+  const closePwBtn = document.getElementById('closePwModalBtn');
+  const cancelPwBtn = document.getElementById('cancelPwBtn');
+  const pwOverlay = document.getElementById('pwModalOverlay');
+  const pwForm = document.getElementById('changePwForm');
+
+  if (closePwBtn) closePwBtn.addEventListener('click', () => { showChangePasswordModal = false; render(); });
+  if (cancelPwBtn) cancelPwBtn.addEventListener('click', () => { showChangePasswordModal = false; render(); });
+  if (pwOverlay) pwOverlay.addEventListener('click', (e) => { if (e.target === pwOverlay) { showChangePasswordModal = false; render(); } });
+  if (pwForm) pwForm.addEventListener('submit', handleChangePasswordSubmit);
+
+  const dashNewBetBtn = document.getElementById('dashNewBetBtn');
+  if (dashNewBetBtn) dashNewBetBtn.addEventListener('click', () => { showNewBetModal = true; render(); });
+
+  const dashViewAllBtn = document.getElementById('dashViewAllBtn');
+  if (dashViewAllBtn) dashViewAllBtn.addEventListener('click', () => { currentView = 'bets'; render(); });
+
+  // User Dropdown
+  const userDropdownTrigger = document.getElementById('userDropdownTrigger');
+  const userDropdownMenu = document.getElementById('userDropdownMenu');
+  if (userDropdownTrigger && userDropdownMenu) {
+    userDropdownTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdownMenu.classList.toggle('active');
     });
-  }
-
-  if (cancelBetBtn) {
-    cancelBetBtn.addEventListener('click', () => {
-      showNewBetModal = false;
-      selectedBetter1 = '';
-      selectedBetter2 = '';
-      render();
-    });
-  }
-
-  if (modalOverlay) {
-    modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) {
-        showNewBetModal = false;
-        selectedBetter1 = '';
-        selectedBetter2 = '';
-        render();
-      }
-    });
-  }
-
-  if (newBetForm) {
-    newBetForm.addEventListener('submit', handleNewBetSubmit);
-  }
-
-  // Handle better selection changes
-  if (better1Select) {
-    better1Select.addEventListener('change', (e) => {
-      if (e.target.value === '__new__') {
-        const newName = prompt('Enter new better name:');
-        if (newName && newName.trim()) {
-          const trimmedName = newName.trim();
-          if (!customBetters.includes(trimmedName)) {
-            customBetters.push(trimmedName);
-          }
-          selectedBetter1 = trimmedName;
-          // Need full re-render to add new option to dropdown
-          updateModalOnly();
-          const select = document.getElementById('better1Select');
-          if (select) select.value = trimmedName;
-        } else {
-          e.target.value = selectedBetter1 || '';
-        }
-      } else {
-        selectedBetter1 = e.target.value;
-        // Just update labels, no re-render needed
-        updateLabelsOnly();
-      }
-    });
-  }
-
-  if (better2Select) {
-    better2Select.addEventListener('change', (e) => {
-      if (e.target.value === '__new__') {
-        const newName = prompt('Enter new better name:');
-        if (newName && newName.trim()) {
-          const trimmedName = newName.trim();
-          if (!customBetters.includes(trimmedName)) {
-            customBetters.push(trimmedName);
-          }
-          selectedBetter2 = trimmedName;
-          // Need full re-render to add new option to dropdown
-          updateModalOnly();
-          const select = document.getElementById('better2Select');
-          if (select) select.value = trimmedName;
-        } else {
-          e.target.value = selectedBetter2 || '';
-        }
-      } else {
-        selectedBetter2 = e.target.value;
-        // Just update labels, no re-render needed
-        updateLabelsOnly();
-      }
-    });
-  }
-
-  // Logout handler
-  document.querySelectorAll('.js-logout-btn').forEach(btn => {
-    btn.addEventListener('click', handleLogout);
-  });
-
-  // Theme toggle handler
-  document.querySelectorAll('.js-theme-toggle').forEach(btn => {
-    btn.addEventListener('click', toggleTheme);
-  });
-}
-
-// Handle Login
-async function handleLogin(e) {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const password = formData.get('password');
-
-  // Show loading state
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  const originalText = submitBtn.innerHTML;
-  submitBtn.innerHTML = 'Verifying...';
-  submitBtn.disabled = true;
-
-  try {
-    const valid = await verifyPassword(password);
-
-    if (valid) {
-      isAuthenticated = true;
-      init(); // Reload the app
-    } else {
-      const errorEl = document.getElementById('loginError');
-      if (errorEl) {
-        errorEl.style.display = 'block';
-      }
-    }
-  } catch (error) {
-    console.error('Login error:', error);
-    const errorEl = document.getElementById('loginError');
-    if (errorEl) {
-      errorEl.textContent = 'Connection error. Please try again.';
-      errorEl.style.display = 'block';
-    }
-  } finally {
-    submitBtn.innerHTML = originalText;
-    submitBtn.disabled = false;
   }
 }
 
-// Handle Logout
-function handleLogout() {
-  isAuthenticated = false;
-  setPassword(''); // Clear password from api.js
-  init(); // Show login screen
-}
-
-// Initialize App
 async function init() {
-  // Check authentication first
-  if (!isAuthenticated) {
+  if (!currentUser) {
     app.innerHTML = renderLoginScreen();
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-      loginForm.addEventListener('submit', handleLogin);
+      loginForm.addEventListener('submit', handleAuthSubmit);
     }
     return;
   }
@@ -1066,118 +1021,23 @@ async function init() {
       <main class="main">
         <div class="empty-state">
           <div class="empty-state__icon">❌</div>
-          <p>Failed to load betting data</p>
-          <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem;">
-            Make sure your Google Sheet is published to the web
-          </p>
+          <p>Failed to load betting data. Please try again later.</p>
         </div>
       </main>
     `;
+    // Re-attach logout listeners even on error
+    document.querySelectorAll('.js-logout-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        logout();
+        currentUser = null;
+        init();
+      });
+    });
   }
 }
 
-// Start the app
-// Render Resolve Modal
-function renderResolveModal() {
-  if (!showResolveModal) return '';
-
-  const bet = bets.find(b => b.id == resolveBetId);
-  if (!bet) return '';
-
-  return `
-    <div class="modal-overlay" id="resolveOverlay">
-      <div class="modal">
-        <div class="modal__header">
-          <h2 class="modal__title">Resolve Bet</h2>
-          <button class="modal__close" id="closeResolveBtn">&times;</button>
-        </div>
-        <div class="modal__body">
-          <p style="margin-bottom: var(--space-md); color: var(--text-muted);">Who won this bet?</p>
-          
-          <div class="bet-card" style="margin-bottom: var(--space-lg); border: 1px solid var(--border-color);">
-            <div class="bet-card__bettor">${bet.better1} vs ${bet.better2}</div>
-            <div class="bet-card__bet">${bet.better1Bet} vs ${bet.better2Bet}</div>
-          </div>
-
-          ${resolveIsSubmitting ? `
-            <div class="loading">
-                <div class="loading__spinner"></div>
-                <p>Updating...</p>
-            </div>
-          ` : `
-          <div class="resolve-actions" style="display: grid; gap: var(--space-md); grid-template-columns: 1fr 1fr;">
-            <button class="btn btn--outline resolve-winner-btn" data-winner="better1">
-              ${bet.better1}
-            </button>
-            <button class="btn btn--outline resolve-winner-btn" data-winner="better2">
-              ${bet.better2}
-            </button>
-          </div>
-          `}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// Handle Resolve Bet
-async function handleResolveBet(winnerKey) {
-  if (!resolveBetId && resolveBetId !== 0) return;
-
-  resolveIsSubmitting = true;
-  render();
-
-  try {
-    // Convert internal key to Sheet value (Title Case)
-    const sheetValue = winnerKey === 'better1' ? 'Better 1' : 'Better 2';
-    await updateBet(resolveBetId, sheetValue);
-
-    // Close and refresh
-    showResolveModal = false;
-    resolveBetId = null;
-    resolveIsSubmitting = false;
-
-    // Refresh
-    bets = await fetchBets();
-    memberStats = calculateMemberStats(bets);
-    overallStats = calculateOverallStats(bets);
-    render();
-
-  } catch (error) {
-    resolveIsSubmitting = false;
-    alert('Failed to update bet: ' + error.message);
-    render();
-  }
-}
-
-// Handle Resolve Payment
-async function handleResolvePayment(betId) {
-  resolveBetId = betId;
-  resolveIsSubmitting = true;
-  render();
-
-  try {
-    await markBetAsPaid(betId);
-
-    resolveBetId = null;
-    resolveIsSubmitting = false;
-
-    // Refresh
-    bets = await fetchBets();
-    memberStats = calculateMemberStats(bets);
-    overallStats = calculateOverallStats(bets);
-    render();
-
-  } catch (error) {
-    resolveIsSubmitting = false;
-    alert('Failed to mark as paid: ' + error.message);
-    render();
-  }
-}
-
-// Global Event Delegation (Singleton to prevent duplicates)
+// Global click delegation for dynamic elements
 if (app) {
-
   app.onclick = (e) => {
     // Leaderboard Click
     const leaderboardItem = e.target.closest('.leaderboard__item');
@@ -1190,20 +1050,7 @@ if (app) {
       return;
     }
 
-    // Open Modal
-    if (e.target.matches('.resolve-btn')) {
-      resolveBetId = e.target.dataset.id;
-      showResolveModal = true;
-      render();
-    }
-
-    // Close Modal
-    if (e.target.matches('#closeResolveBtn') || e.target === document.getElementById('resolveOverlay')) {
-      showResolveModal = false;
-      render();
-    }
-
-    // Select Winner (Trigger Inline Confirmation)
+    // Resolve Winner
     const winnerBtn = e.target.closest('.resolve-winner-btn');
     if (winnerBtn) {
       const winner = winnerBtn.dataset.winner;
@@ -1212,7 +1059,7 @@ if (app) {
       render();
     }
 
-    // Confirm Resolution Action
+    // Confirm Resolution
     if (e.target.matches('.confirm-resolve-btn')) {
       if (confirmingResolution) {
         resolveBetId = confirmingResolution.id;
@@ -1222,19 +1069,19 @@ if (app) {
       }
     }
 
-    // Cancel Resolution Action
+    // Cancel Resolution
     if (e.target.matches('.cancel-resolve-btn')) {
       confirmingResolution = null;
       render();
     }
 
-    // Resolve Payment (Initial Click)
+    // Resolve Payment
     if (e.target.matches('.resolve-payment-btn')) {
       confirmingPaymentId = e.target.dataset.id;
       render();
     }
 
-    // Confirm Payment Action
+    // Confirm Payment
     if (e.target.matches('.confirm-payment-btn')) {
       if (confirmingPaymentId) {
         const betId = confirmingPaymentId;
@@ -1243,7 +1090,7 @@ if (app) {
       }
     }
 
-    // Cancel Payment Action
+    // Cancel Payment
     if (e.target.matches('.cancel-payment-btn')) {
       confirmingPaymentId = null;
       render();
@@ -1251,6 +1098,15 @@ if (app) {
   };
 }
 
-// Start the app
-init();
+// Global click listener to close dropdowns
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('userDropdownMenu');
+  const trigger = document.getElementById('userDropdownTrigger');
 
+  if (menu && menu.classList.contains('active') && trigger && !trigger.contains(e.target)) {
+    menu.classList.remove('active');
+  }
+});
+
+// Start
+init();
