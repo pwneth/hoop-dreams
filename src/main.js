@@ -220,6 +220,7 @@ function renderMyBetsView() {
       <div class="section__header">
         <h2 class="section__title">My Bets</h2>
       </div>
+      ${renderActionNeededSection()}
       ${filtersHtml}
       ${statsHtml}
       ${betsHtml}
@@ -266,6 +267,21 @@ function renderActionNeededSection() {
         </div>
       </section>
     `;
+}
+
+function renderActionToast() {
+  const pendingCount = getPendingActionCount();
+  if (pendingCount === 0) return '';
+
+  return `
+    <div class="action-toast" id="actionToast">
+      <div class="action-toast__content">
+        <span class="action-toast__icon">⚠️</span>
+        <span class="action-toast__text">You have <strong>${pendingCount}</strong> action${pendingCount > 1 ? 's' : ''} required</span>
+      </div>
+      <button class="btn btn--xs btn--primary" id="toastViewBtn">View Tasks</button>
+    </div>
+  `;
 }
 
 function renderHeader() {
@@ -776,7 +792,7 @@ function renderMembersView() {
 
 function renderDashboardView() {
   return `
-    ${renderActionNeededSection()}
+    ${renderActionToast()}
     <div class="mobile-only-action">
       <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
     </div>
@@ -1394,6 +1410,8 @@ function attachEventListeners() {
     navigateTo('/bets');
   });
 
+  const toastViewBtn = document.getElementById('toastViewBtn');
+  if (toastViewBtn) toastViewBtn.addEventListener('click', () => { navigateTo('/my-bets'); });
   // User Dropdown
   const userDropdownTrigger = document.getElementById('userDropdownTrigger');
   const userDropdownMenu = document.getElementById('userDropdownMenu');
