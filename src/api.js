@@ -342,8 +342,6 @@ function parseBetsFromAPI(data) {
       status = 'paid';
     } else if (String(rawStatus).toLowerCase() === 'pending confirmation') {
       status = 'confirming';
-    } else if (String(rawStatus).toLowerCase() === 'declined') {
-      status = 'declined';
     } else if (winnerLabel) {
       status = 'pending'; // Winner determined, but not paid
     }
@@ -471,7 +469,7 @@ export function calculateMemberStats(bets) {
   });
 
   bets.forEach(bet => {
-    if (bet.status === 'confirming' || bet.status === 'declined') return; // Skip these bets for stats calculation
+    if (bet.status === 'confirming') return; // Skip these bets for stats calculation
 
     // Increment totalBets for official bets
     if (stats[bet.better1]) stats[bet.better1].totalBets++;
@@ -513,7 +511,7 @@ export function calculateMemberStats(bets) {
 }
 
 export function calculateOverallStats(bets) {
-  const officialBets = bets.filter(b => b.status !== 'confirming' && b.status !== 'declined');
+  const officialBets = bets.filter(b => b.status !== 'confirming');
 
   const activeBets = officialBets.filter(b => b.status === 'active').length;
   const completedBets = officialBets.filter(b => b.status === 'paid').length;

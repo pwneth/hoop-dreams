@@ -624,10 +624,7 @@ h4 {
   color: #ff9f43;
 }
 
-.bet-card__status--declined {
-  background: rgba(255, 71, 87, 0.1);
-  color: #ff4757;
-}
+
 
 .bet-card__matchup {
   display: grid;

@@ -501,7 +501,7 @@ function getOtherBetter(bet, user) {
 }
 
 function renderBetActions(bet, canModify) {
-  if (!canModify || bet.status === 'paid' || bet.status === 'declined') return '';
+  if (!canModify || bet.status === 'paid') return '';
 
   // BET CONFIRMATION
   if (bet.status === 'confirming') {
