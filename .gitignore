@@ -19,6 +19,7 @@ google-apps-script/
 .env
 .env.local
 .env.*
+!.env.example
 .vscode/*
 !.vscode/extensions.json
 .idea
