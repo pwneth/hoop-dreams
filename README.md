@@ -38,26 +38,44 @@ npm test
 ```
 
 ### 2. Google Apps Script Backend
-HD Bets uses Google Sheets as a database via Google Apps Script.
+HD Bets uses Google Sheets as a database via a custom Google Apps Script API. Follow these steps to sync your cloud database:
 
-1.  Create a new [Google Sheet](https://sheets.new).
-2.  Go to **Extensions > Apps Script**.
-3.  Generate your custom `Code.gs` using our utility script:
+1.  **Create Database**: Create a new [Google Sheet](https://sheets.new).
+2.  **Open Editor**: Go to **Extensions > Apps Script**.
+3.  **Generate Logic**: Run our secure utility to create your backend code:
     ```bash
     # Usage: node generate-apps-script.js <admin_username> <admin_password>
     node generate-apps-script.js Admin MySecretPassword123!
     ```
-4.  Copy the content of `google-apps-script/Code.gs` into the Apps Script editor.
-5.  Run the `setup` function once in the editor to initialize the sheets.
-6.  Click **Deploy > New deployment > Web app**.
+4.  **Initialize Script**: 
+    - Copy the contents of the newly generated `google-apps-script/Code.gs`.
+    - Paste it into the Apps Script editor (replacing all existing code).
+    - Select the `setup` function from the toolbar and click **Run**. (This creates the required 'Users' and 'Bets' tabs in your Sheet).
+5.  **Deploy Web App**:
+    - Click **Deploy > New deployment**.
+    - Select **Web app**.
     - **Execute as**: Me
     - **Who has access**: Anyone
-7.  Copy the Web App URL and paste it as `APPS_SCRIPT_URL` in `src/api/api.js`.
+    - Click **Deploy** and authorize the script.
+6.  **Connect Frontend**: 
+    - Copy the **Web App URL** provided after deployment.
+    - Build your environment file:
+    ```bash
+    cp .env.example .env # Or create a new .env file
+    ```
+    - Set your variable: `VITE_APPS_SCRIPT_URL=YOUR_COPIED_URL`
 
-## 🧪 Testing
-We maintain high code quality with a comprehensive Vitest suite covering components, library logic, and views.
+---
+
+## 🧪 Testing & Quality
+We maintain a robust testing culture. Our suite uses **Vitest** and **JSDOM** to simulate the browser environment, ensuring all components and state logic perform as expected.
+
 ```bash
-npm run test -- run
+# Run all tests
+npm test
+
+# Run tests in UI mode
+npx vitest --ui
 ```
 
 ## 📜 License

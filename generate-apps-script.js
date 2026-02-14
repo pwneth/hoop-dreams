@@ -35,7 +35,7 @@ const lines = [
     " * 3. Delete any existing code and paste this entire file",
     " * 4. Run the 'setup' function once to initialize",
     " * 5. Click Deploy > New deployment > Web app > Execute as: Me > Who has access: Anyone",
-    " * 6. Copy URL to src/api.js",
+    " * 6. Copy URL to your local .env file as VITE_APPS_SCRIPT_URL",
     " */",
     "",
     "const SHEET_BETS = 'Bets';",
