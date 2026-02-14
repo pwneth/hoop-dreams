@@ -231,7 +231,7 @@ function attachEventListeners() {
   if (userDropdownTrigger && userDropdownMenu) {
     userDropdownTrigger.onclick = (e) => {
       e.stopPropagation();
-      userDropdownMenu.classList.toggle('active');
+      userDropdownTrigger.classList.toggle('active');
     };
   }
 }
@@ -312,11 +312,10 @@ if (app) {
 
 // Global click listener to close dropdowns
 document.addEventListener('click', (e) => {
-  const menu = document.getElementById('userDropdownMenu');
   const trigger = document.getElementById('userDropdownTrigger');
 
-  if (menu && menu.classList.contains('active') && trigger && !trigger.contains(e.target)) {
-    menu.classList.remove('active');
+  if (trigger && trigger.classList.contains('active') && !trigger.contains(e.target)) {
+    trigger.classList.remove('active');
   }
 });
 
