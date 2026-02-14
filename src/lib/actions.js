@@ -1,4 +1,4 @@
-import * as api from '../api.js';
+import * as api from '../api/api.js';
 import { getState, setState, setBets, setMemberStats, setOverallStats } from './store.js';
 import { formatCurrency } from './utils.js';
 import { triggerConfetti } from './confetti.js';

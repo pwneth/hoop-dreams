@@ -1,10 +1,10 @@
 import { getState } from '../lib/store.js';
-import { LEAGUE_MEMBERS } from '../api.js';
+import { LEAGUE_MEMBERS } from '../api/api.js';
 
 export function renderChangePasswordModal() {
-    const { showChangePasswordModal } = getState();
-    if (!showChangePasswordModal) return '';
-    return `
+  const { showChangePasswordModal } = getState();
+  if (!showChangePasswordModal) return '';
+  return `
   <div class="modal-overlay" id="pwModalOverlay">
     <div class="modal">
       <div class="modal__header">
@@ -34,25 +34,25 @@ export function renderChangePasswordModal() {
 }
 
 export function renderNewBetModal() {
-    const { showNewBetModal, isSubmitting, submitSuccess, currentUser } = getState();
-    if (!showNewBetModal) return '';
+  const { showNewBetModal, isSubmitting, submitSuccess, currentUser } = getState();
+  if (!showNewBetModal) return '';
 
-    // Filter out 'Pot' from LEAGUE_MEMBERS if it's present, and then filter out the current user
-    const allBetters = [...new Set(LEAGUE_MEMBERS)].filter(b => {
-        const name = (typeof b === 'object' && b !== null) ? (b.username || b.name || String(b)) : String(b);
-        return name.toLowerCase() !== 'pot' && name !== currentUser.username;
-    });
+  // Filter out 'Pot' from LEAGUE_MEMBERS if it's present, and then filter out the current user
+  const allBetters = [...new Set(LEAGUE_MEMBERS)].filter(b => {
+    const name = (typeof b === 'object' && b !== null) ? (b.username || b.name || String(b)) : String(b);
+    return name.toLowerCase() !== 'pot' && name !== currentUser.username;
+  });
 
-    const betterOptions = allBetters.map(m => {
-        const name = (typeof m === 'object' && m !== null) ? (m.username || m.name || 'User') : String(m);
-        return `<option value="${name}">${name}</option>`;
-    }).join('');
+  const betterOptions = allBetters.map(m => {
+    const name = (typeof m === 'object' && m !== null) ? (m.username || m.name || 'User') : String(m);
+    return `<option value="${name}">${name}</option>`;
+  }).join('');
 
-    const loadingClass = isSubmitting ? 'is-loading' : '';
-    const successClass = submitSuccess ? 'is-success' : '';
-    const me = currentUser.username;
+  const loadingClass = isSubmitting ? 'is-loading' : '';
+  const successClass = submitSuccess ? 'is-success' : '';
+  const me = currentUser.username;
 
-    return `
+  return `
   <div class="modal-overlay ${loadingClass} ${successClass}" id="modalOverlay">
     <div class="modal" id="modalContainer">
       <!-- Loader Overlay -->

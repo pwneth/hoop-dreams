@@ -1,4 +1,4 @@
-import { getCurrentUser } from '../api.js';
+import { getCurrentUser } from '../api/api.js';
 
 // Initial state
 const initialState = {

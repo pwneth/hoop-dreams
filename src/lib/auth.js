@@ -1,4 +1,4 @@
-import * as api from '../api.js';
+import * as api from '../api/api.js';
 import { setState } from './store.js';
 
 export async function login(username, password) {

@@ -1,4 +1,4 @@
-import './style.css';
+import './styles/main.css';
 import {
   getState,
   subscribe,
@@ -333,9 +333,16 @@ async function init() {
 
   const { currentUser } = getState();
   if (currentUser) {
-    // Render skeleton loading
-    const mainEl = document.querySelector('.main');
-    if (mainEl) mainEl.innerHTML = renderLoading(); // Logic helper
+    // Render initial shell with skeleton loader
+    app.innerHTML = `
+      <div class="nav-overlay" id="navOverlay"></div>
+      ${renderMobileNav()}
+      ${renderHeader()}
+      <main class="main">
+        ${renderLoading()}
+      </main>
+    `;
+    attachEventListeners();
 
     try {
       await refreshData();
