@@ -16,6 +16,7 @@ import {
   fetchUsers,
   confirmBet
 } from './api.js';
+import { formatCurrency, formatDate, getInitials, getOtherBetter } from './utils.js';
 
 // Auth State
 let currentUser = getCurrentUser();
@@ -61,23 +62,7 @@ function toggleTheme() {
 // DOM Elements
 const app = document.getElementById('app');
 
-// Helpers
-function formatCurrency(amount) {
-  return `€${amount.toFixed(2)}`;
-}
-
-function formatDate(date) {
-  if (!date) return 'N/A';
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  });
-}
-
-function getInitials(name) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-}
+// Helpers imported from utils.js
 
 // Confetti Helpers
 function triggerConfetti(type = 'happy') {
@@ -228,7 +213,7 @@ function renderMyBetsView() {
   `;
 }
 
-function getPendingBets() {
+export function getPendingBets() {
   if (!currentUser || !bets) return [];
   return bets.filter(bet => {
     if (bet.better1 !== currentUser.username && bet.better2 !== currentUser.username) return false;
@@ -249,7 +234,7 @@ function getPendingBets() {
   });
 }
 
-function getPendingActionCount() {
+export function getPendingActionCount() {
   return getPendingBets().length;
 }
 
@@ -495,10 +480,7 @@ function renderLeaderboard() {
   `;
 }
 
-function getOtherBetter(bet, user) {
-  if (!user) return { name: 'Opponent' };
-  return bet.better1 === user.username ? { name: bet.better2 } : { name: bet.better1 };
-}
+
 
 function renderBetActions(bet, canModify) {
   if (!canModify || bet.status === 'paid') return '';
