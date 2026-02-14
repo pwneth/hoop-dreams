@@ -1,8 +1,6 @@
-// Google Apps Script Web App URL
-// IMPORTANT: Replace this URL after deploying the Apps Script
-// See /google-apps-script/Code.gs for deployment instructions
-// NOTE: You MUST deploy the new version of Code.gs for this to work!
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxk4CRS7-fxW3EtaeLkcPVTVxFfrF9qH_R6zmbd5cXORgs-LbX-tksDBP4XSaeyGNOj/exec';
+// Google Apps Script Web App URL from environment variables
+// IMPORTANT: Add VITE_APPS_SCRIPT_URL to your .env file
+const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
 // Known league members (populated from server, fallback to hardcoded)
 export let LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
