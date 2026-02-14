@@ -7,9 +7,14 @@ import { getState } from '../../lib/store/store.js';
 export function renderDashboardView() {
   return `
     ${renderActionToast()}
-    <div class="mobile-only-action">
-      <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
+    
+    <!-- Mobile FAB -->
+    <div class="mobile-main-action">
+      <button class="btn btn--primary btn--full mobile-fab" id="dashNewBetBtn">
+        <span style="margin-right: 8px;">🏀</span> PLACE NEW BET
+      </button>
     </div>
+
     ${renderStatsCards()}
     ${renderLeaderboard()}
 
