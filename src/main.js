@@ -1,4 +1,4 @@
-import './style.css';
+import './styles/main.css';
 import {
   getState,
   subscribe,
@@ -6,22 +6,22 @@ import {
   setBettorFilter,
   toggleTheme,
   setState
-} from './lib/store.js';
-import { navigateTo, handleRoute } from './lib/router.js';
-import { logout } from './lib/auth.js';
-import { handleNewBetSubmit, handleResolveBet, handleConfirmBet, handleResolvePayment, handleAuthSubmit, handleChangePasswordSubmit, refreshData } from './lib/actions.js';
+} from './lib/store/store.js';
+import { navigateTo, handleRoute } from './lib/router/router.js';
+import { logout } from './lib/auth/auth.js';
+import { handleNewBetSubmit, handleResolveBet, handleConfirmBet, handleResolvePayment, handleAuthSubmit, handleChangePasswordSubmit, refreshData } from './lib/actions/actions.js';
 
 // Views
-import { renderDashboardView } from './views/Dashboard.js';
-import { renderMyBetsView } from './views/MyBets.js';
-import { renderAllBetsView } from './views/AllBets.js';
-import { renderMembersView } from './views/Members.js';
+import { renderDashboardView } from './views/Dashboard/Dashboard.js';
+import { renderMyBetsView } from './views/MyBets/MyBets.js';
+import { renderAllBetsView } from './views/AllBets/AllBets.js';
+import { renderMembersView } from './views/Members/Members.js';
 
 // Components
-import { renderHeader, renderMobileNav } from './components/Header.js';
-import { renderLoginScreen } from './components/Login.js';
-import { renderNewBetModal, renderChangePasswordModal } from './components/Modals.js';
-import { renderLoading } from './components/Loader.js';
+import { renderHeader, renderMobileNav } from './components/Header/Header.js';
+import { renderLoginScreen } from './components/Login/Login.js';
+import { renderNewBetModal, renderChangePasswordModal } from './components/Modals/Modals.js';
+import { renderLoading } from './components/Loader/Loader.js';
 
 const app = document.getElementById('app');
 
@@ -333,9 +333,16 @@ async function init() {
 
   const { currentUser } = getState();
   if (currentUser) {
-    // Render skeleton loading
-    const mainEl = document.querySelector('.main');
-    if (mainEl) mainEl.innerHTML = renderLoading(); // Logic helper
+    // Render initial shell with skeleton loader
+    app.innerHTML = `
+      <div class="nav-overlay" id="navOverlay"></div>
+      ${renderMobileNav()}
+      ${renderHeader()}
+      <main class="main">
+        ${renderLoading()}
+      </main>
+    `;
+    attachEventListeners();
 
     try {
       await refreshData();
