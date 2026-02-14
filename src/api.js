@@ -316,7 +316,7 @@ export async function markBetAsPaid(betId) {
 // Parsing Logic (Unchanged)
 // ----------------------------------------------------------------------
 
-function parseBetsFromAPI(data) {
+export function parseBetsFromAPI(data) {
   return data.map((row, index) => {
     // Keys might be from headers (with spaces) or hardcoded in Code.gs (CamelCase)
     // We check both.
@@ -416,14 +416,14 @@ const COLUMNS = {
   AMOUNT_LOST: 12
 };
 
-function parseCurrency(value) {
+export function parseCurrency(value) {
   if (!value && value !== 0) return 0;
   const strValue = String(value);
   const cleaned = strValue.replace(/[€$,]/g, '').trim();
   return parseFloat(cleaned) || 0;
 }
 
-function parseDate(dateStr) {
+export function parseDate(dateStr) {
   if (!dateStr) return null;
   const strDate = String(dateStr);
   const isoDate = new Date(strDate);
