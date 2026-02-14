@@ -1,6 +1,9 @@
 // Google Apps Script Web App URL from environment variables
-// IMPORTANT: Add VITE_APPS_SCRIPT_URL to your .env file
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
+
+if (!APPS_SCRIPT_URL) {
+  console.error('❌ APPS_SCRIPT_URL is not defined! Check your .env file or build settings.');
+}
 
 // Known league members (populated from server, fallback to hardcoded)
 export let LEAGUE_MEMBERS = ['Eleodoro', 'Michael', 'Pelos', 'Loukianos', 'Bastian'];
@@ -60,8 +63,16 @@ export async function login(username, password) {
       password: password
     });
 
-    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
     const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+
+    // Check if the response is actually JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Invalid API response:', text.substring(0, 200));
+      throw new Error('API returned HTML instead of JSON. Check Apps Script permissions and deployment URL.');
+    }
+
     const result = await response.json();
 
     if (result.success && result.user) {
@@ -93,8 +104,16 @@ export async function register(username, password) {
       password: password
     });
 
-    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
     const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+
+    // Check if the response is actually JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Invalid API response:', text.substring(0, 200));
+      throw new Error('API returned HTML instead of JSON. Check Apps Script permissions and deployment URL.');
+    }
+
     const result = await response.json();
 
     if (result.success && result.user) {
@@ -127,8 +146,16 @@ export async function changePassword(oldPassword, newPassword) {
       newPassword: newPassword
     });
 
-    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
     const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+
+    // Check if the response is actually JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Invalid API response:', text.substring(0, 200));
+      throw new Error('API returned HTML instead of JSON. Check Apps Script permissions and deployment URL.');
+    }
+
     const result = await response.json();
 
     if (result.success) {
@@ -218,8 +245,16 @@ export async function fetchUsers() {
   });
 
   try {
-    const url = `${APPS_SCRIPT_URL}?${params.toString()}`;
     const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+
+    // Check if the response is actually JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Invalid API response:', text.substring(0, 200));
+      throw new Error('API returned HTML instead of JSON. Check Apps Script permissions and deployment URL.');
+    }
+
     const result = await response.json();
 
     if (result.success && result.data) {
