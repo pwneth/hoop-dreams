@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatCurrency, formatDate, getInitials, getOtherBetter } from './utils.js';
+import { formatCurrency, formatDate, getInitials, getOtherBetter } from './lib/utils.js';
 
 describe('formatCurrency', () => {
     it('should format currency correctly', () => {
