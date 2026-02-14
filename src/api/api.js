@@ -1,7 +1,7 @@
 // Google Apps Script Web App URL from environment variables
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
-if (!APPS_SCRIPT_URL) {
+if (!APPS_SCRIPT_URL && import.meta.env.MODE !== 'test') {
   console.error('❌ APPS_SCRIPT_URL is not defined! Check your .env file or build settings.');
 }
 
