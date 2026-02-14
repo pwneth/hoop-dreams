@@ -1,11 +1,11 @@
-import { getState, getPendingActionCount, toggleTheme } from '../../lib/store/store.js';
+import { getState, getPendingActionCount } from '../../lib/store/store.js';
 import { getInitials } from '../../lib/utils/utils.js';
 import { logout } from '../../lib/auth/auth.js';
 
 let hasAnimatedBadge = false;
 
 export function renderHeader() {
-  const { currentUser, currentView, isDarkMode } = getState();
+  const { currentUser, currentView } = getState();
   const user = currentUser || { username: 'Guest' };
   const pendingCount = getPendingActionCount();
   const BASE_URL = import.meta.env.BASE_URL || '/';
@@ -23,46 +23,43 @@ export function renderHeader() {
       <div class="header__inner">
         <div class="header__brand js-logo-link" style="cursor: pointer;">
           <img src="${BASE_URL}header_logo.png" class="header__logo-img" alt="HD Bets" />
-          <span class="header__title">HD Bets!</span>
+          <span class="header__title">HD // BETS</span>
         </div>
         <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">☰</button>
         
         <!-- Desktop Nav -->
         <nav class="header__nav desktop-only">
           <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
-            Dashboard
+            DASHBOARD
           </button>
           <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
-            My Bets ${badgeHtml}
+            MY BETS ${badgeHtml}
           </button>
           <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
-            All Bets
+            ALL BETS
           </button>
           <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
-            Members
+            MEMBERS
           </button>
-          <button class="nav-btn nav-btn--primary js-new-bet-btn">
-            + New Bet
+          <button class="btn btn--secondary btn--sm js-new-bet-btn">
+            + NEW BET
           </button>
           
           <div class="header__user">
              <div class="user-dropdown" id="userDropdownTrigger">
                <div class="user-badge" title="Logged in as ${user.username}">
                  <div class="user-badge__icon">${getInitials(user.username)}</div>
-                 <span>${user.username}</span>
+                 <span class="font-mono text-sm">${user.username}</span>
                  ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
                  <span style="font-size: 0.7em; margin-left: 4px; opacity: 0.5;">▼</span>
                </div>
                
                <div class="user-dropdown-menu" id="userDropdownMenu">
                  <button class="user-dropdown-item js-change-pw-btn">
-                   <span>🔑</span> Change Password
+                   <span>🔑</span> CHANGE PASSWORD
                  </button>
-                 <button class="user-dropdown-item js-theme-toggle">
-                   <span>${isDarkMode ? '☀️' : '🌙'}</span> ${isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                 </button>
-                 <button class="user-dropdown-item js-logout-btn" style="color: #ff4757;">
-                   <span>➜</span> Logout
+                 <button class="user-dropdown-item js-logout-btn" style="color: var(--neon-pink);">
+                   <span>➜</span> LOGOUT
                  </button>
                </div>
              </div>
@@ -75,7 +72,7 @@ export function renderHeader() {
 }
 
 export function renderMobileNav() {
-  const { currentUser, currentView, isDarkMode } = getState();
+  const { currentUser, currentView } = getState();
   const user = currentUser || { username: 'Guest' };
   const pendingCount = getPendingActionCount();
   const BASE_URL = import.meta.env.BASE_URL || '/';
@@ -87,29 +84,27 @@ export function renderMobileNav() {
       <div class="mobile-nav-header" style="padding: var(--space-lg) var(--space-md); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-md);">
          <div class="user-badge__icon" style="width: 48px; height: 48px; font-size: 1.2rem;">${getInitials(user.username)}</div>
          <div>
-           <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary);">${user.username}</div>
-           <div style="font-size: 0.8rem; color: var(--text-muted);">${user.isAdmin ? 'League Administrator' : 'League Member'}</div>
+           <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary); font-family: var(--font-display);">${user.username}</div>
+           <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">${user.isAdmin ? 'League Administrator' : 'League Member'}</div>
          </div>
       </div>
       <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
-        Dashboard
+        DASHBOARD
       </button>
       <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
-        My Bets ${badgeHtml}
+        MY BETS ${badgeHtml}
       </button>
       <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
-        All Bets
+        ALL BETS
       </button>
       <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
-        Members
+        MEMBERS
       </button>
       
-      <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);">
-         <button class="nav-btn js-new-bet-btn" style="background: var(--primary); color: white; justify-content: center;">Place New Bet</button>
-         <button class="nav-btn js-logout-btn" style="color: #ff4757; justify-content: center;">Log Out</button>
-         <button class="nav-btn js-theme-toggle" style="justify-content: center;">
-             ${isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-         </button>
+      <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 10px;">
+         <button class="btn btn--primary js-new-bet-btn" style="justify-content: center;">PLACE NEW BET</button>
+         <button class="btn btn--outline js-change-pw-btn" style="justify-content: center;">CHANGE PASSWORD</button>
+         <button class="btn btn--danger js-logout-btn" style="justify-content: center;">LOG OUT</button>
       </div>
     </nav>
   `;

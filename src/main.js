@@ -4,7 +4,6 @@ import {
   subscribe,
   setStatusFilter,
   setBettorFilter,
-  toggleTheme,
   setState
 } from './lib/store/store.js';
 import { navigateTo, handleRoute } from './lib/router/router.js';
@@ -195,9 +194,6 @@ function attachEventListeners() {
     });
   });
 
-  document.querySelectorAll('.js-theme-toggle').forEach(btn => {
-    btn.addEventListener('click', toggleTheme);
-  });
 
   const dashNewBetBtn = document.getElementById('dashNewBetBtn');
   if (dashNewBetBtn) dashNewBetBtn.onclick = () => setState({ showNewBetModal: true });
