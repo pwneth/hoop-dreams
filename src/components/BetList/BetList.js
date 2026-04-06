@@ -9,9 +9,9 @@ export function renderFilters() {
   return `
     <div class="filters">
       <button class="filter-btn ${statusFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
-      <button class="filter-btn ${statusFilter === 'active' ? 'active' : ''}" data-filter="active">🟢 Active</button>
-      <button class="filter-btn ${statusFilter === 'paid' ? 'active' : ''}" data-filter="paid">✅ Paid</button>
-      <button class="filter-btn ${statusFilter === 'pending' ? 'active' : ''}" data-filter="pending">⏳ Pending</button>
+      <button class="filter-btn ${statusFilter === 'active' ? 'active' : ''}" data-filter="active">Active</button>
+      <button class="filter-btn ${statusFilter === 'paid' ? 'active' : ''}" data-filter="paid">Paid</button>
+      <button class="filter-btn ${statusFilter === 'pending' ? 'active' : ''}" data-filter="pending">Pending</button>
       <select class="form-select" id="bettorFilterSelect" style="min-width: 150px;">
         <option value="all" ${bettorFilter === 'all' ? 'selected' : ''}>All Bettors</option>
         ${bettorOptions}

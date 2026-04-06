@@ -41,7 +41,7 @@ export function renderHeader() {
           <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
             MEMBERS
           </button>
-          <button class="btn btn--secondary btn--sm js-new-bet-btn">
+          <button class="btn btn--primary btn--sm js-new-bet-btn">
             + NEW BET
           </button>
           

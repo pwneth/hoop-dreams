@@ -8,31 +8,37 @@ export function renderLoginScreen() {
     <div class="login-container">
       <div class="login-card">
         <div class="login-card__header">
-          <img src="${BASE_URL}header_logo.png" class="login-card__logo-img" alt="HD Bets" />
-          <h1 class="login-card__title">HD Bets!</h1>
-          <p class="login-card__subtitle">Fantasy Basketball Betting</p>
+          <div class="login-logo-container">
+            <img src="${BASE_URL}header_logo.png" class="login-card__logo-img" alt="HD Bets" />
+          </div>
+          <h1 class="login-card__title">HD // BETS</h1>
+          <p class="login-card__subtitle">PREMIUM P2P WAGERING</p>
         </div>
         
         <div class="auth-toggle">
-          <div class="auth-toggle__btn ${authMode === 'login' ? 'active' : ''}" onclick="window.setAuthMode('login')">Login</div>
-          <div class="auth-toggle__btn ${authMode === 'register' ? 'active' : ''}" onclick="window.setAuthMode('register')">Register</div>
+          <button class="auth-toggle__btn ${authMode === 'login' ? 'active' : ''}" onclick="window.setAuthMode('login')">SIGN IN</button>
+          <button class="auth-toggle__btn ${authMode === 'register' ? 'active' : ''}" onclick="window.setAuthMode('register')">CREATE ACCOUNT</button>
         </div>
 
         <form class="login-form" id="loginForm">
           <div class="form-group">
             <label class="form-label">First Name</label>
-            <input type="text" class="form-input" name="username" placeholder="Enter your first name" style="text-transform: capitalize;" required autofocus />
+            <input type="text" class="form-input" name="username" placeholder="e.g. Michael" style="text-transform: capitalize;" required autofocus />
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-input" name="password" placeholder="Enter password" required />
+            <input type="password" class="form-input" name="password" placeholder="••••••••" required />
           </div>
           
           <div class="login-error" id="loginError" style="display: none;"></div>
           
-          <button type="submit" class="btn btn--primary btn--full">
-            ${authMode === 'login' ? 'Login' : 'Create Account'}
+          <button type="submit" class="btn btn--primary btn--full btn--xl" style="margin-top: var(--space-md);">
+            ${authMode === 'login' ? 'ACCESS ACCOUNT' : 'CREATE SLIP'}
           </button>
+          
+          <p style="margin-top: var(--space-lg); font-size: 0.7rem; color: var(--text-muted); text-align: center; font-family: var(--font-mono);">
+            BY PROCEEDING YOU AGREE TO THE LEAGUE TERMS
+          </p>
         </form>
       </div>
     </div>

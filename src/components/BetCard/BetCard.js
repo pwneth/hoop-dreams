@@ -30,9 +30,14 @@ function renderBetActions(bet, canModify) {
     if (!isOpponent) {
       return `
         <div class="bet-actions-row">
-          <div class="verification-status">
-            <span class="verification-status__icon">⏳</span>
-            <span>Waiting for <strong>${bet.better2}</strong> to confirm</span>
+          <div class="verification-status" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div>
+              <span class="verification-status__icon">⏳</span>
+              <span>Waiting for <strong>${bet.better2}</strong> to confirm</span>
+            </div>
+            <button class="btn btn--xs btn--outline js-share-bet" data-id="${bet.id}" data-type="confirm_bet" title="Share link to confirm bet">
+              Share <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:4px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            </button>
           </div>
         </div>
       `;
@@ -66,7 +71,19 @@ function renderBetActions(bet, canModify) {
   if (isWaitingForWinner) {
     if (bet.proposerWinner) {
       if (bet.proposerWinner === currentUser.username) {
-        return `<div class="bet-actions-row"><div class="verification-status"><span class="verification-status__icon">⏳</span><span>Waiting for <strong>${getOtherBetter(bet, currentUser).name}</strong> to verify winner</span></div></div>`;
+        return `
+          <div class="bet-actions-row">
+            <div class="verification-status" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <div>
+                <span class="verification-status__icon">⏳</span>
+                <span>Waiting for <strong>${getOtherBetter(bet, currentUser).name}</strong> to verify winner</span>
+              </div>
+              <button class="btn btn--xs btn--outline js-share-bet" data-id="${bet.id}" data-type="verify_winner" title="Share link to verify outcome">
+                 Share <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:4px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
       } else {
         // Show Confirm UI
         // Determine name of proposed winner
@@ -121,7 +138,19 @@ function renderBetActions(bet, canModify) {
   else if (isWaitingForPayment) {
     if (bet.proposerPaid) {
       if (bet.proposerPaid === currentUser.username) {
-        return `<div class="bet-actions-row"><div class="verification-status"><span class="verification-status__icon">💸</span><span>Waiting for <strong>${getOtherBetter(bet, currentUser).name}</strong> to verify payment</span></div></div>`;
+        return `
+          <div class="bet-actions-row">
+            <div class="verification-status" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <div>
+                <span class="verification-status__icon">💸</span>
+                <span>Waiting for <strong>${getOtherBetter(bet, currentUser).name}</strong> to verify payment</span>
+              </div>
+              <button class="btn btn--xs btn--outline js-share-bet" data-id="${bet.id}" data-type="verify_payment" title="Share link to verify payment">
+                 Share <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:4px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
       } else {
         if (confirmingPaymentId == bet.id) {
           return `
@@ -180,17 +209,27 @@ export function renderBetCard(bet) {
   const isParticipant = currentUser && (currentUser.username === bet.better1 || currentUser.username === bet.better2);
   const canModify = isAdmin || isParticipant;
 
+  const actionsHtml = renderBetActions(bet, canModify);
+  const cardHasActions = actionsHtml.trim() !== '';
+  const actionsClass = cardHasActions ? 'has-actions' : '';
+
   return `
-    <div class="bet-card ${cardClass}">
+    <div class="bet-card ${cardClass} ${actionsClass}">
       <div class="bet-card__header">
         <span class="bet-card__date">${formatDate(bet.date)}</span>
-        <span class="bet-card__status ${statusClass}">${statusLabel}</span>
+        <div class="bet-card__header-right">
+          ${cardHasActions ? `
+          <div class="bet-card__actions-container">
+            ${actionsHtml}
+          </div>` : ''}
+          <span class="badge bet-card__status badge--${bet.status}">${statusLabel}</span>
+        </div>
       </div>
       <div class="bet-card__matchup">
         <div class="bet-card__side ${side1Class}">
           <div class="bet-card__bettor">
-            ${bet.better1}
-            ${isWinner1 ? '<span class="winner-badge">👑</span>' : ''}
+            ${bet.better1} 
+            ${isWinner1 ? '<span class="winner-label">WINNER</span>' : ''}
           </div>
           <div class="bet-card__bet">${bet.better1Bet}</div>
           <div class="bet-card__stake">${formatCurrency(bet.better1Reward)}</div>
@@ -198,14 +237,13 @@ export function renderBetCard(bet) {
         <div class="bet-card__vs">VS</div>
         <div class="bet-card__side ${side2Class}">
           <div class="bet-card__bettor">
-            ${bet.better2}
-            ${isWinner2 ? '<span class="winner-badge">👑</span>' : ''}
+            ${bet.better2} 
+            ${isWinner2 ? '<span class="winner-label">WINNER</span>' : ''}
           </div>
           <div class="bet-card__bet">${bet.better2Bet}</div>
           <div class="bet-card__stake">${formatCurrency(bet.better2Reward)}</div>
         </div>
       </div>
-      ${renderBetActions(bet, canModify)}
     </div>
   `;
 }

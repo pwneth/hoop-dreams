@@ -24,9 +24,9 @@ export function renderMyBetsView() {
   const filtersHtml = `
     <div class="filters">
       <button class="filter-btn ${statusFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
-      <button class="filter-btn ${statusFilter === 'active' ? 'active' : ''}" data-filter="active">🟢 Active</button>
-      <button class="filter-btn ${statusFilter === 'paid' ? 'active' : ''}" data-filter="paid">✅ Paid</button>
-      <button class="filter-btn ${statusFilter === 'pending' ? 'active' : ''}" data-filter="pending">⏳ Pending</button>
+      <button class="filter-btn ${statusFilter === 'active' ? 'active' : ''}" data-filter="active">Active</button>
+      <button class="filter-btn ${statusFilter === 'paid' ? 'active' : ''}" data-filter="paid">Paid</button>
+      <button class="filter-btn ${statusFilter === 'pending' ? 'active' : ''}" data-filter="pending">Pending</button>
     </div>
   `;
 
@@ -48,14 +48,30 @@ export function renderMyBetsView() {
   }
 
   return `
-    <section class="section">
-      <div class="section__header">
-        <h2 class="section__title">My Bets</h2>
+    <div class="dashboard-layout">
+      <aside class="dashboard-sidebar">
+        <section class="section">
+          <div class="section__header">
+            <h2 class="section__title">Filters</h2>
+          </div>
+          ${filtersHtml}
+        </section>
+        <section class="section">
+          <div class="section__header">
+            <h2 class="section__title">Stats</h2>
+          </div>
+          ${statsHtml}
+        </section>
+      </aside>
+      <div class="dashboard-main">
+        <section class="section">
+          <div class="section__header">
+            <h2 class="section__title">My Bets</h2>
+          </div>
+          ${renderActionNeededSection()}
+          ${betsHtml}
+        </section>
       </div>
-      ${renderActionNeededSection()}
-      ${filtersHtml}
-      ${statsHtml}
-      ${betsHtml}
-    </section>
+    </div>
   `;
 }

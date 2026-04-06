@@ -26,7 +26,7 @@ describe('Header Component', () => {
 
         const html = renderHeader();
         expect(html).toContain('TestUser');
-        expect(html).toContain('HD Bets!');
+        expect(html).toContain('HD // BETS');
     });
 
     it('should show badge for pending actions', () => {
@@ -49,7 +49,7 @@ describe('Header Component', () => {
         vi.mocked(store.getPendingActionCount).mockReturnValue(2);
 
         const html = renderMobileNav();
-        expect(html).toContain('My Bets');
+        expect(html).toContain('MY BETS');
         expect(html).toContain('nav-badge');
     });
 });

@@ -3,34 +3,34 @@ import { formatCurrency } from '../../lib/utils/utils.js';
 import { renderStatsCards } from '../StatsCards/StatsCards.js';
 
 export function renderIndividualStats(name) {
-  const { memberStats, overallStats } = getState();
+  const { memberStats } = getState();
   const member = memberStats.find(m => m.name === name);
   if (!member) return '';
   const totalBets = (member.wins || 0) + (member.losses || 0) + (member.activeBets || 0);
   const profitSign = member.netProfit > 0 ? '+' : '';
-  const netColor = member.netProfit >= 0 ? 'var(--status-active)' : '#ff4757';
+  const profitClass = member.netProfit > 0 ? 'stat-card__value--positive' : member.netProfit < 0 ? 'stat-card__value--negative' : '';
 
   return `
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-card__label">Total Bets</div>
-        <div class="stat-card__value">${totalBets}</div>
+        <span class="stat-card__label">Total Bets</span>
+        <span class="stat-card__value">${totalBets}</span>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Won</div>
-        <div class="stat-card__value" style="color: var(--status-active);">${member.wins}</div>
+        <span class="stat-card__label">Won</span>
+        <span class="stat-card__value stat-card__value--positive">${member.wins}</span>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Lost</div>
-        <div class="stat-card__value" style="color: #ff4757;">${member.losses}</div>
+        <span class="stat-card__label">Lost</span>
+        <span class="stat-card__value stat-card__value--negative">${member.losses}</span>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Potential</div>
-        <div class="stat-card__value" style="color: var(--text-secondary);">${formatCurrency(member.potentialGain || 0)}</div>
+        <span class="stat-card__label">Potential</span>
+        <span class="stat-card__value">${formatCurrency(member.potentialGain || 0)}</span>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">Net</div>
-        <div class="stat-card__value" style="color: ${netColor};">${profitSign}${formatCurrency(member.netProfit)}</div>
+        <span class="stat-card__label">Net Profit</span>
+        <span class="stat-card__value ${profitClass}">${profitSign}${formatCurrency(member.netProfit)}</span>
       </div>
     </div>
   `;

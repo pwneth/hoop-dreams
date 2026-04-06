@@ -15,17 +15,24 @@ export function renderDashboardView() {
       </button>
     </div>
 
-    ${renderStatsCards()}
-    ${renderLeaderboard()}
-
-    <section class="section">
-      <div class="section__header">
-        <h2 class="section__title">Recent Activity</h2>
+    <div class="dashboard-layout">
+      <aside class="dashboard-sidebar">
+        ${renderLeaderboard()}
+        <section class="section">
+          <div class="section__header">
+            <h2 class="section__title">Stats</h2>
+          </div>
+          ${renderStatsCards()}
+        </section>
+      </aside>
+      <div class="dashboard-main">
+        <section class="section">
+          <div class="section__header">
+            <h2 class="section__title">All Bets</h2>
+          </div>
+          ${renderBetsList(getState().bets)}
+        </section>
       </div>
-      ${renderBetsList(getState().bets.slice(0, 5))}
-      <div style="margin-top: var(--space-lg); text-align: center;">
-        <button class="nav-btn nav-btn--outline" data-path="/bets" style="width: 100%; justify-content: center;">View All Bets</button>
-      </div>
-    </section>
+    </div>
   `;
 }

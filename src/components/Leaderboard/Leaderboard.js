@@ -10,6 +10,7 @@ export function renderLeaderboard() {
 
   const items = memberStats.map((member, index) => {
     const rank = index + 1;
+    const rankLabel = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
     const rankClass = rank <= 3 ? `leaderboard__rank--${rank}` : 'leaderboard__rank--other';
     const profitClass = member.netProfit > 0 ? 'leaderboard__profit--positive' :
       member.netProfit < 0 ? 'leaderboard__profit--negative' :
@@ -17,8 +18,8 @@ export function renderLeaderboard() {
     const profitSign = member.netProfit > 0 ? '+' : '';
 
     return `
-      <div class="leaderboard__item" data-bettor="${member.name}" role="button" tabindex="0">
-        <div class="leaderboard__rank ${rankClass}">${rank}</div>
+      <div class="leaderboard__item" data-bettor="${member.name}" data-rank="${rank}" role="button" tabindex="0">
+        <div class="leaderboard__rank ${rankClass}">${rankLabel}</div>
         <div class="leaderboard__name">${member.name}</div>
         <div class="leaderboard__stats">${member.wins}W - ${member.losses}L (${member.winRate}%)</div>
         <div class="leaderboard__potential">${member.potentialGain > 0 ? formatCurrency(member.potentialGain) : '-'}</div>
@@ -30,7 +31,7 @@ export function renderLeaderboard() {
   return `
     <section class="section">
       <div class="section__header">
-        <h2 class="section__title"><span>🏆</span> Leaderboard</h2>
+        <h2 class="section__title">Leaderboard</h2>
       </div>
       <div class="leaderboard">
         ${items}

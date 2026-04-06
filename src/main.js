@@ -307,6 +307,43 @@ if (app) {
     if (e.target.matches('.cancel-payment-btn')) {
       setState({ confirmingPaymentId: null });
     }
+
+    // Share Bet
+    const shareBtn = e.target.closest('.js-share-bet');
+    if (shareBtn) {
+      const type = shareBtn.dataset.type;
+      const betId = shareBtn.dataset.id;
+      let text = 'Check out this bet on HD Bets!';
+      const url = `${window.location.origin}${window.location.pathname}?betId=${betId}`;
+
+      if (type === 'confirm_bet') {
+        text = 'Hey! I just placed a bet with you on HD Bets. Click the link to review and accept it 🏀';
+      } else if (type === 'verify_winner') {
+        text = 'Hey! I verified the outcome of our bet on HD Bets. Click the link to approve it 🏀';
+      } else if (type === 'verify_payment') {
+        text = 'Hey! I marked our bet as paid on HD Bets. Click the link to confirm you received it 💸';
+      }
+
+      const shareData = {
+        title: 'HD Bets Action Required',
+        text: text,
+        url: url
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData).catch(err => {
+          console.error('Error sharing:', err);
+        });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(`${text}\\n${url}`).then(() => {
+          const originalText = shareBtn.innerHTML;
+          shareBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            shareBtn.innerHTML = originalText;
+          }, 2000);
+        });
+      }
+    }
   };
 }
 
@@ -341,7 +378,34 @@ async function init() {
 
     try {
       await refreshData();
-      handleRoute(); // Set initial view
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const betId = urlParams.get('betId');
+      if (betId) {
+        setStatusFilter('all');
+        setBettorFilter('all');
+        handleRoute(); // Apply route so state triggers render
+        navigateTo('/bets');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(() => {
+          const betCardBtn = document.querySelector(`.js-confirm-bet-action[data-id="${betId}"], .resolve-winner-btn[data-id="${betId}"], .resolve-payment-btn[data-id="${betId}"], .js-start-confirm-bet[data-id="${betId}"], .js-share-bet[data-id="${betId}"]`);
+          if (betCardBtn) {
+            const betCard = betCardBtn.closest('.bet-card');
+            if (betCard) {
+              betCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              const originalTransition = betCard.style.transition;
+              betCard.style.transition = 'box-shadow 0.3s ease-in-out';
+              betCard.style.boxShadow = '0 0 0 3px var(--primary-color)';
+              setTimeout(() => {
+                betCard.style.boxShadow = '';
+                setTimeout(() => betCard.style.transition = originalTransition, 300);
+              }, 2000);
+            }
+          }
+        }, 300);
+      } else {
+        handleRoute(); // Set initial view
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load betting data. Please try again.');
