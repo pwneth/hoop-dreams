@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6001D2"/>
+      <stop offset="50%" style="stop-color:#7B1FA2"/>
+      <stop offset="100%" style="stop-color:#9C27B0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Background decoration -->
+  <text x="1050" y="160" font-size="180" opacity="0.08" fill="white">&#127936;</text>
+  <text x="50" y="580" font-size="140" opacity="0.06" fill="white">&#127942;</text>
+
+  <!-- Trophy -->
+  <text x="600" y="180" font-size="80" text-anchor="middle" fill="white">&#127942;</text>
+
+  <!-- Title -->
+  <text x="600" y="270" font-family="Inter, sans-serif" font-size="60" font-weight="900" font-style="italic" text-anchor="middle" fill="white">NBA Playoff Bracket</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="320" font-family="Inter, sans-serif" font-size="26" font-weight="600" text-anchor="middle" fill="white" opacity="0.9">Pick winners. Predict games. Win the pot.</text>
+
+  <!-- Features -->
+  <text x="210" y="410" font-size="36" text-anchor="middle" fill="white">&#127936;</text>
+  <text x="210" y="440" font-family="Inter, sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="white" opacity="0.85">All Rounds</text>
+
+  <text x="430" y="410" font-size="36" text-anchor="middle" fill="white">&#127922;</text>
+  <text x="430" y="440" font-family="Inter, sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="white" opacity="0.85">Predict Games</text>
+
+  <text x="650" y="410" font-size="36" text-anchor="middle" fill="white">&#11088;</text>
+  <text x="650" y="440" font-family="Inter, sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="white" opacity="0.85">Score Points</text>
+
+  <text x="870" y="410" font-size="36" text-anchor="middle" fill="white">&#128176;</text>
+  <text x="870" y="440" font-family="Inter, sans-serif" font-size="15" font-weight="600" text-anchor="middle" fill="white" opacity="0.85">Winner Takes All</text>
+
+  <!-- CTA Button -->
+  <rect x="450" y="480" width="300" height="52" rx="26" fill="white"/>
+  <text x="600" y="513" font-family="Inter, sans-serif" font-size="20" font-weight="800" text-anchor="middle" fill="#6001D2">Make Your Picks</text>
+
+  <!-- Brand -->
+  <text x="600" y="600" font-family="Inter, sans-serif" font-size="18" font-weight="700" font-style="italic" text-anchor="middle" fill="white" opacity="0.5">HD Bets!</text>
+</svg>

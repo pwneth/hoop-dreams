@@ -5,11 +5,14 @@ import * as store from '../../lib/store/store.js';
 vi.mock('../../lib/store/store.js', () => ({
     getState: vi.fn(),
     getPendingActionCount: vi.fn(),
+    getPendingBets: vi.fn(() => []),
     toggleTheme: vi.fn()
 }));
 
 vi.mock('../../lib/utils/utils.js', () => ({
-    getInitials: (name) => name[0]
+    getInitials: (name) => name[0],
+    formatCurrency: (v) => `€${v}`,
+    getAvatarColor: () => ({ bg: '#000', text: '#fff' }),
 }));
 
 describe('Header Component', () => {
@@ -20,7 +23,10 @@ describe('Header Component', () => {
     it('should render user info', () => {
         vi.mocked(store.getState).mockReturnValue({
             currentUser: { username: 'TestUser' },
-            currentView: 'dashboard'
+            currentView: 'dashboard',
+            overallStats: { totalBets: 10, activeBets: 5, completedBets: 5, totalVolume: 100 },
+            memberStats: [],
+            bettorFilter: 'all',
         });
         vi.mocked(store.getPendingActionCount).mockReturnValue(0);
 
@@ -32,7 +38,10 @@ describe('Header Component', () => {
     it('should show badge for pending actions', () => {
         vi.mocked(store.getState).mockReturnValue({
             currentUser: { username: 'TestUser' },
-            currentView: 'dashboard'
+            currentView: 'dashboard',
+            overallStats: { totalBets: 10 },
+            memberStats: [],
+            bettorFilter: 'all',
         });
         vi.mocked(store.getPendingActionCount).mockReturnValue(5);
 
@@ -44,12 +53,15 @@ describe('Header Component', () => {
     it('mobile nav should render correctly', () => {
         vi.mocked(store.getState).mockReturnValue({
             currentUser: { username: 'TestUser' },
-            currentView: 'my-bets'
+            currentView: 'dashboard',
+            overallStats: {},
+            memberStats: [],
+            bettorFilter: 'all',
         });
         vi.mocked(store.getPendingActionCount).mockReturnValue(2);
 
         const html = renderMobileNav();
-        expect(html).toContain('My Bets');
+        expect(html).toContain('Bets');
         expect(html).toContain('nav-badge');
     });
 });

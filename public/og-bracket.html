@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px;
+    height: 630px;
+    background: linear-gradient(135deg, #6001D2 0%, #7B1FA2 50%, #9C27B0 100%);
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    overflow: hidden;
+    position: relative;
+  }
+  .bg-ball {
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.08;
+    top: -40px;
+    right: -40px;
+  }
+  .bg-ball2 {
+    position: absolute;
+    font-size: 150px;
+    opacity: 0.06;
+    bottom: -30px;
+    left: -30px;
+  }
+  .content {
+    text-align: center;
+    z-index: 1;
+  }
+  .trophy { font-size: 80px; margin-bottom: 16px; }
+  .title {
+    font-size: 64px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 28px;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-bottom: 32px;
+  }
+  .features {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+  }
+  .feature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .feature-icon { font-size: 36px; }
+  .feature-text {
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+  .cta {
+    margin-top: 36px;
+    background: white;
+    color: #6001D2;
+    padding: 14px 48px;
+    border-radius: 50px;
+    font-size: 20px;
+    font-weight: 800;
+    display: inline-block;
+  }
+  .brand {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    opacity: 0.5;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+  <div class="bg-ball">&#127936;</div>
+  <div class="bg-ball2">&#127942;</div>
+  <div class="content">
+    <div class="trophy">&#127942;</div>
+    <div class="title">NBA Playoff Bracket</div>
+    <div class="subtitle">Pick winners. Predict games. Win the pot.</div>
+    <div class="features">
+      <div class="feature">
+        <span class="feature-icon">&#127936;</span>
+        <span class="feature-text">All Rounds</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">&#127922;</span>
+        <span class="feature-text">Predict Games</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">&#11088;</span>
+        <span class="feature-text">Score Points</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">&#128176;</span>
+        <span class="feature-text">Winner Takes All</span>
+      </div>
+    </div>
+    <div class="cta">Make Your Picks</div>
+  </div>
+  <div class="brand">HD Bets!</div>
+</body>
+</html>

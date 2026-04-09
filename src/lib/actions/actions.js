@@ -44,17 +44,20 @@ export async function handleNewBetSubmit(e) {
         setState({ submitSuccess: true, isSubmitting: false });
         triggerConfetti('dice');
 
-        // Auto close modal after delay
-        setTimeout(async () => {
+        // Refresh data immediately so the new bet appears
+        await refreshData();
+
+        // Auto close modal after brief success display
+        setTimeout(() => {
             setState({ submitSuccess: false, showNewBetModal: false });
 
-            await refreshData();
-
-            const newBetCard = document.querySelector('.bet-card');
-            if (newBetCard) {
-                newBetCard.classList.add('animate-new-bet');
+            // Highlight the new row
+            const firstRow = document.querySelector('.bet-table__row');
+            if (firstRow) {
+                firstRow.classList.add('bet-table__row--new');
+                setTimeout(() => firstRow.classList.remove('bet-table__row--new'), 2000);
             }
-        }, 3000);
+        }, 1500);
 
     } catch (error) {
         setState({ isSubmitting: false });
@@ -83,13 +86,8 @@ export async function handleResolveBet(winnerKey) {
             triggerConfetti('sad');
         }
 
-        setState({
-            showResolveModal: false,
-            resolveBetId: null,
-            resolveIsSubmitting: false
-        });
-
         await refreshData();
+        setState({ showResolveModal: false, resolveBetId: null, resolveIsSubmitting: false, showBetActionModal: null });
 
     } catch (error) {
         setState({ resolveIsSubmitting: false });
@@ -107,12 +105,8 @@ export async function handleConfirmBet(betId, confirmAction) {
             triggerConfetti('dice');
         }
 
-        setState({
-            resolveBetId: null,
-            resolveIsSubmitting: false
-        });
-
         await refreshData();
+        setState({ resolveBetId: null, resolveIsSubmitting: false, showBetActionModal: null });
 
     } catch (error) {
         setState({ resolveIsSubmitting: false });
@@ -132,12 +126,8 @@ export async function handleResolvePayment(betId) {
             triggerConfetti('happy');
         }
 
-        setState({
-            resolveBetId: null,
-            resolveIsSubmitting: false
-        });
-
         await refreshData();
+        setState({ resolveBetId: null, resolveIsSubmitting: false, showBetActionModal: null });
 
     } catch (error) {
         setState({ resolveIsSubmitting: false });

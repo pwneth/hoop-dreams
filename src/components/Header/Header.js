@@ -1,4 +1,4 @@
-import { getState, getPendingActionCount, toggleTheme } from '../../lib/store/store.js';
+import { getState, getPendingActionCount, getPendingBets, toggleTheme } from '../../lib/store/store.js';
 import { getInitials } from '../../lib/utils/utils.js';
 import { formatCurrency } from '../../lib/utils/utils.js';
 import { logout } from '../../lib/auth/auth.js';
@@ -27,8 +27,8 @@ function renderMemberStatsBar(member, label) {
         <span class="stats-bar__value" style="color: #ff8a8a;">${member.losses || 0}</span>
         <span class="stats-bar__label">Lost</span>
       </div>
-      <div class="stats-bar__divider"></div>
-      <div class="stats-bar__item">
+      <div class="stats-bar__divider stats-bar__hide-mobile"></div>
+      <div class="stats-bar__item stats-bar__hide-mobile">
         <span class="stats-bar__value">${formatCurrency(member.potentialGain || 0)}</span>
         <span class="stats-bar__label">Potential</span>
       </div>
@@ -41,18 +41,23 @@ function renderMemberStatsBar(member, label) {
   `;
 }
 
+function renderActionBar() {
+  const count = getPendingActionCount();
+  if (count === 0) return '';
+  return `
+    <div class="action-bar">
+      <span class="action-bar__icon">&#9888;&#65039;</span>
+      <span class="action-bar__text">You have <strong>${count}</strong> pending action${count > 1 ? 's' : ''} requiring your attention</span>
+    </div>
+  `;
+}
+
 export function renderStatsBar() {
   const { overallStats, currentView, currentUser, memberStats, bettorFilter } = getState();
   if (!overallStats || !overallStats.totalBets) return '';
 
-  // My Bets: show current user's stats
-  if (currentView === 'my-bets' && currentUser) {
-    const member = memberStats.find(m => m.name === currentUser.username);
-    if (member) return renderMemberStatsBar(member, currentUser.username);
-  }
-
-  // All Bets with a player selected: show that player's stats
-  if (currentView === 'bets' && bettorFilter && bettorFilter !== 'all') {
+  // When a player is selected: show that player's stats
+  if (currentView === 'dashboard' && bettorFilter && bettorFilter !== 'all') {
     const member = memberStats.find(m => m.name === bettorFilter);
     if (member) return renderMemberStatsBar(member, bettorFilter);
   }
@@ -99,63 +104,58 @@ export function renderHeader() {
 
   return `
     <header class="header">
-      <div class="header__inner">
-        <div class="header__brand js-logo-link" style="cursor: pointer;">
-          <img src="${BASE_URL}header_logo.png" class="header__logo-img" alt="HD Bets" />
-          <span class="header__title">HD Bets!</span>
-        </div>
-        <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">☰</button>
-        
-        <!-- Desktop Nav -->
-        <nav class="header__nav desktop-only">
-          <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
-            Dashboard
-          </button>
-          <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
-            My Bets ${badgeHtml}
-          </button>
-          <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
-            All Bets
-          </button>
-          <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
-            Members
-          </button>
-          <button class="nav-btn ${currentView === 'history' ? 'active' : ''}" data-path="/history">
-            History
-          </button>
-          <button class="nav-btn ${currentView === 'bracket' ? 'active' : ''}" data-path="/bracket">
-            Bracket
-          </button>
-          <button class="nav-btn nav-btn--primary js-new-bet-btn">
-            + New Bet
-          </button>
-          
-          <div class="header__user">
-             <div class="user-dropdown" id="userDropdownTrigger">
-               <div class="user-badge" title="Logged in as ${user.username}">
-                 <div class="user-badge__icon">${getInitials(user.username)}</div>
-                 <span>${user.username}</span>
-                 ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
-                 <span style="font-size: 0.7em; margin-left: 4px; opacity: 0.5;">▼</span>
-               </div>
-               
-               <div class="user-dropdown-menu" id="userDropdownMenu">
-                 <button class="user-dropdown-item js-change-pw-btn">
-                   <span>🔑</span> Change Password
-                 </button>
-                 <button class="user-dropdown-item js-theme-toggle">
-                   <span>${isDarkMode ? '☀️' : '🌙'}</span> ${isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                 </button>
-                 <button class="user-dropdown-item js-logout-btn" style="color: #ff4757;">
-                   <span>➜</span> Logout
-                 </button>
-               </div>
-             </div>
+      <div class="header__nav-row">
+        <div class="header__inner">
+          <div class="header__brand js-logo-link" style="cursor: pointer;">
+            <img src="${BASE_URL}header_logo.png" class="header__logo-img" alt="HD Bets" />
+            <span class="header__title">HD Bets!</span>
           </div>
-        </nav>
+          <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">☰</button>
+
+          <!-- Desktop Nav -->
+          <nav class="header__nav desktop-only">
+            ${currentUser ? `
+              <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
+                Bets ${badgeHtml}
+              </button>
+            ` : ''}
+            <button class="nav-btn ${currentView === 'bracket' ? 'active' : ''}" data-path="/bracket">
+              Bracket
+            </button>
+            ${currentUser ? `
+              <button class="nav-btn nav-btn--primary js-new-bet-btn">
+                + New Bet
+              </button>
+              <div class="header__user">
+                 <div class="user-dropdown" id="userDropdownTrigger">
+                   <div class="user-badge" title="Logged in as ${user.username}">
+                     <div class="user-badge__icon">${getInitials(user.username)}</div>
+                     <span>${user.username}</span>
+                     ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
+                     <span style="font-size: 0.7em; margin-left: 4px; opacity: 0.5;">▼</span>
+                   </div>
+                   <div class="user-dropdown-menu" id="userDropdownMenu">
+                     <button class="user-dropdown-item js-change-pw-btn">
+                       <span>🔑</span> Change Password
+                     </button>
+                     <button class="user-dropdown-item js-theme-toggle">
+                       <span>${isDarkMode ? '☀️' : '🌙'}</span> ${isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                     </button>
+                     <button class="user-dropdown-item js-logout-btn" style="color: #ff4757;">
+                       <span>➜</span> Logout
+                     </button>
+                   </div>
+                 </div>
+              </div>
+            ` : `
+              <button class="nav-btn nav-btn--primary js-logo-link" data-path="/">Sign In</button>
+            `}
+          </nav>
+        </div>
       </div>
       <div class="nav-overlay" id="navOverlay"></div>
       ${renderStatsBar()}
+      ${renderActionBar()}
     </header>
   `;
 }
@@ -178,19 +178,7 @@ export function renderMobileNav() {
          </div>
       </div>
       <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
-        Dashboard
-      </button>
-      <button class="nav-btn ${currentView === 'my-bets' ? 'active' : ''}" data-path="/my-bets">
-        My Bets ${badgeHtml}
-      </button>
-      <button class="nav-btn ${currentView === 'bets' ? 'active' : ''}" data-path="/bets">
-        All Bets
-      </button>
-      <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
-        Members
-      </button>
-      <button class="nav-btn ${currentView === 'history' ? 'active' : ''}" data-path="/history">
-        History
+        Bets ${badgeHtml}
       </button>
       <button class="nav-btn ${currentView === 'bracket' ? 'active' : ''}" data-path="/bracket">
         Bracket
