@@ -2,9 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderMyBetsView } from './MyBets.js';
 import * as store from '../../lib/store/store.js';
 
-vi.mock('../../lib/store/store.js', () => ({ getState: vi.fn() }));
-vi.mock('../../components/Stats/Stats.js', () => ({ renderIndividualStats: () => '<div>MyStats</div>' }));
-vi.mock('../../components/BetCard/BetCard.js', () => ({ renderBetCard: () => '<div>BetCard</div>' }));
+vi.mock('../../lib/store/store.js', () => ({
+    getState: vi.fn(),
+    getPendingBets: vi.fn(() => []),
+}));
+vi.mock('../../components/BetTable/BetTable.js', () => ({ renderBetTable: () => '<div>BetTable</div>' }));
 vi.mock('../../components/ActionNeeded/ActionNeeded.js', () => ({ renderActionNeededSection: () => '<div>ActionNeeded</div>' }));
 
 describe('MyBets View', () => {
@@ -14,25 +16,26 @@ describe('MyBets View', () => {
         expect(html).toBe('');
     });
 
-    it('should render bets and stats for user', () => {
+    it('should render table and action needed for user', () => {
         vi.mocked(store.getState).mockReturnValue({
             currentUser: { username: 'Me' },
             bets: [{ better1: 'Me', status: 'active' }],
             statusFilter: 'all'
         });
         const html = renderMyBetsView();
-        expect(html).toContain('MyStats');
-        expect(html).toContain('BetCard');
+        expect(html).toContain('BetTable');
         expect(html).toContain('ActionNeeded');
+        expect(html).toContain('My Bets');
     });
 
-    it('should render empty state if no bets', () => {
+    it('should render table even with no bets', () => {
         vi.mocked(store.getState).mockReturnValue({
             currentUser: { username: 'Me' },
             bets: [],
             statusFilter: 'all'
         });
         const html = renderMyBetsView();
-        expect(html).toContain('No bets found');
+        expect(html).toContain('BetTable');
+        expect(html).toContain('My Bets');
     });
 });

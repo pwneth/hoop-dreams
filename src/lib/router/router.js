@@ -26,14 +26,6 @@ export function handleRoute() {
     let view = 'dashboard';
     if (internalPath === '/' || internalPath === '/dashboard' || internalPath === '') {
         view = 'dashboard';
-    } else if (internalPath === '/my-bets') {
-        view = 'my-bets';
-    } else if (internalPath === '/bets') {
-        view = 'bets';
-    } else if (internalPath === '/members') {
-        view = 'members';
-    } else if (internalPath === '/history') {
-        view = 'history';
     } else if (internalPath === '/bracket') {
         view = 'bracket';
     } else {

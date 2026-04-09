@@ -14,15 +14,12 @@ import { handleNewBetSubmit, handleResolveBet, handleConfirmBet, handleResolvePa
 
 // Views
 import { renderDashboardView } from './views/Dashboard/Dashboard.js';
-import { renderMyBetsView } from './views/MyBets/MyBets.js';
-import { renderAllBetsView } from './views/AllBets/AllBets.js';
-import { renderMembersView } from './views/Members/Members.js';
-import { renderBetHistoryView } from './views/BetHistory/BetHistory.js';
 import { renderBracketView, renderBracketSavingOverlay, renderBracketConfirmModal, renderBracketHowModal } from './views/Bracket/Bracket.js';
 
 // Components
 import { renderHeader, renderMobileNav, renderStatsBar } from './components/Header/Header.js';
 import { renderLoginScreen } from './components/Login/Login.js';
+import { renderBetActionModal } from './components/BetTable/BetTable.js';
 import { renderNewBetModal, renderChangePasswordModal } from './components/Modals/Modals.js';
 import { renderLoading } from './components/Loader/Loader.js';
 
@@ -36,8 +33,8 @@ function render(target = 'all') {
   const state = getState();
   const { currentView, showNewBetModal, isSubmitting, submitSuccess, showChangePasswordModal, currentUser } = state;
 
-  // If not logged in, show login screen
-  if (!currentUser) {
+  // If not logged in, allow bracket view but show login for everything else
+  if (!currentUser && currentView !== 'bracket') {
     if (app.innerHTML !== renderLoginScreen()) {
       app.innerHTML = renderLoginScreen();
       attachLoginListeners();
@@ -50,29 +47,18 @@ function render(target = 'all') {
     case 'dashboard':
       mainContent = renderDashboardView();
       break;
-    case 'my-bets':
-      mainContent = renderMyBetsView();
-      break;
-    case 'bets':
-      mainContent = renderAllBetsView();
-      break;
-    case 'members':
-      mainContent = renderMembersView();
-      break;
-    case 'history':
-      mainContent = renderBetHistoryView();
-      break;
     case 'bracket': {
       const { bracketMatchups, bracketLoading } = state;
-      // Track which user's bracket data is loaded
-      const bracketUser = window._bracketLoadedUser;
-      const currentUsername = currentUser ? currentUser.username : null;
-      if ((!bracketMatchups.length || bracketUser !== currentUsername) && !bracketLoading) {
-        window._bracketLoadedUser = currentUsername;
-        refreshBracketData();
-        if (!localStorage.getItem('hd_bracket_seen')) {
-          localStorage.setItem('hd_bracket_seen', '1');
-          setState({ showBracketHowModal: true });
+      if (currentUser) {
+        const bracketUser = window._bracketLoadedUser;
+        const currentUsername = currentUser.username;
+        if ((!bracketMatchups.length || bracketUser !== currentUsername) && !bracketLoading) {
+          window._bracketLoadedUser = currentUsername;
+          refreshBracketData();
+          if (!localStorage.getItem('hd_bracket_seen')) {
+            localStorage.setItem('hd_bracket_seen', '1');
+            setState({ showBracketHowModal: true });
+          }
         }
       }
       mainContent = renderBracketView();
@@ -102,11 +88,8 @@ function render(target = 'all') {
               </div>
             </div>
             <div class="footer__links">
-              <button class="footer__link nav-btn" data-path="/">Dashboard</button>
-              <button class="footer__link nav-btn" data-path="/my-bets">My Bets</button>
-              <button class="footer__link nav-btn" data-path="/bets">All Bets</button>
+              <button class="footer__link nav-btn" data-path="/">Bets</button>
               <button class="footer__link nav-btn" data-path="/bracket">Bracket</button>
-              <button class="footer__link nav-btn" data-path="/members">Members</button>
             </div>
           </div>
           <div class="footer__copy">&copy; ${new Date().getFullYear()} HD Bets. All rights reserved.</div>
@@ -143,6 +126,8 @@ function render(target = 'all') {
         }
       } else if (showChangePasswordModal) {
         modalsEl.innerHTML = renderChangePasswordModal();
+      } else if (state.showBetActionModal) {
+        modalsEl.innerHTML = renderBetActionModal();
       } else {
         // Bracket modals
         const bracketHow = renderBracketHowModal();
@@ -222,7 +207,7 @@ function attachEventListeners() {
   }
 
   // Filters
-  document.querySelectorAll('.filter-btn').forEach(btn => {
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const filter = e.target.dataset.filter;
       setStatusFilter(filter);
@@ -235,6 +220,19 @@ function attachEventListeners() {
       setBettorFilter(e.target.value);
     };
   }
+
+  document.querySelectorAll('.js-show-my-bets').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const { currentUser } = getState();
+      if (currentUser) setBettorFilter(currentUser.username);
+    });
+  });
+
+  document.querySelectorAll('.js-show-all-bets').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setBettorFilter('all');
+    });
+  });
 
   // Sort columns (Bet History table)
   document.querySelectorAll('.js-sort-col').forEach(th => {
@@ -274,7 +272,11 @@ function attachEventListeners() {
   if (dashNewBetBtn) dashNewBetBtn.onclick = () => setState({ showNewBetModal: true });
 
   const toastViewBtn = document.getElementById('toastViewBtn');
-  if (toastViewBtn) toastViewBtn.onclick = () => navigateTo('/my-bets');
+  if (toastViewBtn) toastViewBtn.onclick = () => {
+    const { currentUser } = getState();
+    if (currentUser) setBettorFilter(currentUser.username);
+    navigateTo('/');
+  };
 
   // Modals Actions
   const closeModalBtn = document.getElementById('closeModalBtn');
@@ -349,12 +351,19 @@ document.addEventListener('click', (e) => {
 // Global Delegated Listeners (attached once)
 if (app) {
   app.onclick = (e) => {
+    // Open bet action modal
+    const openBetAction = e.target.closest('.js-open-bet-action');
+    if (openBetAction) {
+      setState({ showBetActionModal: openBetAction.dataset.betId });
+      return;
+    }
+
     // Leaderboard Click
     const leaderboardItem = e.target.closest('.leaderboard__item');
     if (leaderboardItem) {
       setStatusFilter('all');
       setBettorFilter(leaderboardItem.dataset.bettor);
-      navigateTo('/bets');
+      navigateTo('/');
       return;
     }
 
@@ -555,6 +564,90 @@ if (app) {
   };
 }
 
+// Bet action modal listener (modals container is outside #app)
+document.addEventListener('click', (e) => {
+  // Close modal
+  if (e.target.closest('.js-close-bet-modal-btn')) {
+    setState({ showBetActionModal: null });
+    return;
+  }
+  if (e.target.classList.contains('js-close-bet-modal')) {
+    setState({ showBetActionModal: null });
+    return;
+  }
+
+  // Confirm bet (accept/decline)
+  const confirmBetAction = e.target.closest('.js-confirm-bet-action');
+  if (confirmBetAction) {
+    const betId = confirmBetAction.dataset.id;
+    const action = confirmBetAction.dataset.action;
+    setState({ confirmingBetId: null, showBetActionModal: null });
+    handleConfirmBet(betId, action);
+    return;
+  }
+
+  // Start confirm bet
+  const startConfirm = e.target.closest('.js-start-confirm-bet');
+  if (startConfirm) {
+    setState({ confirmingBetId: startConfirm.dataset.id });
+    return;
+  }
+
+  // Cancel confirm bet
+  if (e.target.closest('.js-cancel-confirm-bet')) {
+    setState({ confirmingBetId: null });
+    return;
+  }
+
+  // Resolve winner
+  const winnerBtn = e.target.closest('.resolve-winner-btn');
+  if (winnerBtn) {
+    const winner = winnerBtn.dataset.winner;
+    const betId = winnerBtn.dataset.id;
+    setState({ confirmingResolution: { id: betId, winner: winner } });
+    return;
+  }
+
+  // Confirm resolution
+  if (e.target.matches('.confirm-resolve-btn')) {
+    const { confirmingResolution } = getState();
+    if (confirmingResolution) {
+      setState({ resolveBetId: confirmingResolution.id, confirmingResolution: null, showBetActionModal: null });
+      handleResolveBet(confirmingResolution.winner);
+    }
+    return;
+  }
+
+  // Cancel resolution
+  if (e.target.closest('.cancel-resolve-btn')) {
+    setState({ confirmingResolution: null });
+    return;
+  }
+
+  // Resolve payment
+  if (e.target.matches('.resolve-payment-btn')) {
+    setState({ confirmingPaymentId: e.target.dataset.id });
+    return;
+  }
+
+  // Confirm payment
+  if (e.target.matches('.confirm-payment-btn')) {
+    const { confirmingPaymentId } = getState();
+    if (confirmingPaymentId) {
+      const betId = confirmingPaymentId;
+      setState({ confirmingPaymentId: null, showBetActionModal: null });
+      handleResolvePayment(betId);
+    }
+    return;
+  }
+
+  // Cancel payment
+  if (e.target.matches('.cancel-payment-btn')) {
+    setState({ confirmingPaymentId: null });
+    return;
+  }
+});
+
 // Bracket modals listener (modals container is outside #app)
 document.addEventListener('click', (e) => {
   // Confirm save modal
@@ -606,6 +699,30 @@ window.addEventListener('scroll', () => {
     bar.classList.remove('stats-bar--hidden');
   }
 });
+
+// ==========================================
+// BRACKET COUNTDOWN TIMER
+// ==========================================
+
+const PICKS_OPEN = new Date('2026-04-14T06:00:00Z');
+setInterval(() => {
+  const el = document.getElementById('bracketCountdown');
+  if (!el) return;
+  const now = new Date();
+  if (now >= PICKS_OPEN) { el.closest('.bracket-countdown')?.remove(); return; }
+  const diff = PICKS_OPEN - now;
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const m = Math.floor((diff / (1000 * 60)) % 60);
+  const s = Math.floor((diff / 1000) % 60);
+  const nums = el.querySelectorAll('.bracket-countdown__num');
+  if (nums.length === 4) {
+    nums[0].textContent = d;
+    nums[1].textContent = String(h).padStart(2, '0');
+    nums[2].textContent = String(m).padStart(2, '0');
+    nums[3].textContent = String(s).padStart(2, '0');
+  }
+}, 1000);
 
 // ==========================================
 // TOOLTIP
@@ -692,6 +809,7 @@ async function init() {
       alert('Failed to load betting data. Please try again.');
     }
   } else {
+    handleRoute();
     render();
   }
 }

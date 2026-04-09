@@ -38,6 +38,7 @@ const initialState = {
     bracketStagedPicks: {}, // { [matchupId]: { pick, games } } — unsaved user picks
     bracketAdminChanges: {}, // { [matchupId]: { teamTop, teamBottom, winner, gamesPlayed } }
     bracketAdminPendingWinner: null, // { matchupId, winner }
+    showBetActionModal: null, // bet id to show actions for
     showBracketConfirmModal: false,
     showBracketHowModal: false,
 

@@ -20,6 +20,33 @@ export function getInitials(name) {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
+// Fixed color assignment per known member for maximum contrast
+const MEMBER_COLORS = {
+  'Michael':   { bg: '#6001D2', text: '#FFF' },
+  'Pelos':     { bg: '#E91E63', text: '#FFF' },
+  'Loukianos': { bg: '#00838F', text: '#FFF' },
+  'Eleodoro':  { bg: '#E65100', text: '#FFF' },
+  'Bastian':   { bg: '#2E7D32', text: '#FFF' },
+};
+
+const FALLBACK_COLORS = [
+  { bg: '#C62828', text: '#FFF' },
+  { bg: '#1565C0', text: '#FFF' },
+  { bg: '#AD1457', text: '#FFF' },
+  { bg: '#00695C', text: '#FFF' },
+  { bg: '#F57F17', text: '#FFF' },
+];
+
+export function getAvatarColor(name) {
+  if (!name) return FALLBACK_COLORS[0];
+  if (MEMBER_COLORS[name]) return MEMBER_COLORS[name];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) * 31 + hash;
+  }
+  return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
+}
+
 export function getOtherBetter(bet, user) {
     if (!user) return { name: 'Opponent' };
     return bet.better1 === user.username ? { name: bet.better2 } : { name: bet.better1 };

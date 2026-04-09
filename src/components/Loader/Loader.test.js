@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { renderLoading } from './Loader.js';
 
 describe('Loader Component', () => {
-    it('should render skeleton structure', () => {
+    it('should render engaging loader with icon and message', () => {
         const html = renderLoading();
-        expect(html).toContain('skeleton-leaderboard');
-        expect(html).toContain('skeleton-bet-card');
+        expect(html).toContain('app-loader');
+        expect(html).toContain('app-loader__icon');
+        expect(html).toContain('app-loader__spinner');
+        expect(html).toContain('app-loader__text');
     });
 });

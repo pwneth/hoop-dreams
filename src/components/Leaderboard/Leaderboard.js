@@ -1,7 +1,7 @@
 import { formatCurrency } from '../../lib/utils/utils.js';
 import { getState } from '../../lib/store/store.js';
 
-export function renderLeaderboard() {
+export function renderLeaderboard(compact = false) {
   const { memberStats } = getState();
 
   if (!memberStats || memberStats.length === 0) {
@@ -26,6 +26,21 @@ export function renderLeaderboard() {
       </div>
     `;
   }).join('');
+
+  if (compact) {
+    return `
+      <div class="leaderboard">
+        <div class="leaderboard__item leaderboard__item--header">
+          <div class="leaderboard__rank">#</div>
+          <div class="leaderboard__name">Player</div>
+          <div class="leaderboard__stats">Record</div>
+          <div class="leaderboard__potential">Potential</div>
+          <div class="leaderboard__profit">Net</div>
+        </div>
+        ${items}
+      </div>
+    `;
+  }
 
   return `
     <section class="section">

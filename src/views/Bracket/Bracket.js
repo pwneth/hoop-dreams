@@ -282,6 +282,58 @@ function getMatchups() {
 }
 
 // =============================================
+// Countdown
+// =============================================
+
+const PICKS_OPEN_DATE = new Date('2026-04-14T06:00:00Z'); // April 14 1am EST = 6am UTC
+
+function renderCountdown() {
+  const now = new Date();
+  if (now >= PICKS_OPEN_DATE) return '';
+
+  const diff = PICKS_OPEN_DATE - now;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+
+  return `
+    <div class="bracket-countdown">
+      <div class="bracket-countdown__header">
+        <span class="bracket-countdown__icon">&#127936;</span>
+        <span class="bracket-countdown__label">Picks open when the regular season ends</span>
+      </div>
+      <div class="bracket-countdown__timer" id="bracketCountdown">
+        <div class="bracket-countdown__unit">
+          <span class="bracket-countdown__num">${days}</span>
+          <span class="bracket-countdown__tag">days</span>
+        </div>
+        <span class="bracket-countdown__sep">:</span>
+        <div class="bracket-countdown__unit">
+          <span class="bracket-countdown__num">${String(hours).padStart(2, '0')}</span>
+          <span class="bracket-countdown__tag">hrs</span>
+        </div>
+        <span class="bracket-countdown__sep">:</span>
+        <div class="bracket-countdown__unit">
+          <span class="bracket-countdown__num">${String(minutes).padStart(2, '0')}</span>
+          <span class="bracket-countdown__tag">min</span>
+        </div>
+        <span class="bracket-countdown__sep">:</span>
+        <div class="bracket-countdown__unit">
+          <span class="bracket-countdown__num">${String(seconds).padStart(2, '0')}</span>
+          <span class="bracket-countdown__tag">sec</span>
+        </div>
+      </div>
+      <div class="bracket-countdown__date">April 14, 2026 at 1:00 AM EST</div>
+    </div>
+  `;
+}
+
+export function isPicksOpen() {
+  return new Date() >= PICKS_OPEN_DATE;
+}
+
+// =============================================
 // Main View
 // =============================================
 
@@ -327,6 +379,21 @@ export function renderBracketView() {
           ${isAdmin ? `<button class="btn btn--secondary js-fetch-standings">Fetch Latest Standings</button>` : ''}
         </div>
       </div>
+
+      <!-- Sign In CTA for non-logged-in users -->
+      ${!currentUser ? `
+        <div class="bracket-cta">
+          <span class="bracket-cta__icon">&#127936;</span>
+          <div class="bracket-cta__text">
+            <strong>Want to make your picks?</strong>
+            <span>Sign in or create an account to start predicting the playoffs!</span>
+          </div>
+          <button class="btn btn--primary js-logo-link" data-path="/">Sign In</button>
+        </div>
+      ` : ''}
+
+      <!-- Countdown -->
+      ${!isAdmin ? renderCountdown() : ''}
 
       <!-- Scoreboard + Buy-In -->
       ${renderScoreboard(bracketScores, bracketBuyIn, pot, isAdmin)}
@@ -479,44 +546,46 @@ export function renderBracketHowModal() {
 
   return `
     <div class="bracket-confirm-overlay js-close-how-modal">
-      <div class="bracket-confirm" style="max-width: 500px;">
-        <div class="bracket-confirm__icon">&#127942;</div>
-        <h3 class="bracket-confirm__title">How It Works</h3>
-        <div class="bracket-instructions__body">
-          <div class="bracket-instructions__rule">
-            <span class="bracket-instructions__icon">&#127942;</span>
-            <div>
-              <strong>Pick the winner</strong> of every matchup — play-in games, all four rounds, and the Finals.
+      <div class="how-modal">
+        <div class="how-modal__header">
+          <span class="how-modal__trophy">&#127942;</span>
+          <h3 class="how-modal__title">How It Works</h3>
+          <p class="how-modal__subtitle">Predict the NBA Playoffs and win the pot!</p>
+        </div>
+        <div class="how-modal__steps">
+          <div class="how-modal__step">
+            <div class="how-modal__step-num">1</div>
+            <div class="how-modal__step-content">
+              <strong>Pick every winner</strong>
+              <span>Play-in, all four rounds, and the Finals</span>
             </div>
           </div>
-          <div class="bracket-instructions__rule">
-            <span class="bracket-instructions__icon">&#127922;</span>
-            <div>
-              <strong>Predict the number of games</strong> each series will go (4, 5, 6, or 7).
+          <div class="how-modal__step">
+            <div class="how-modal__step-num">2</div>
+            <div class="how-modal__step-content">
+              <strong>Predict the games</strong>
+              <span>How many games will each series go? (4-7)</span>
             </div>
           </div>
-          <div class="bracket-instructions__rule">
-            <span class="bracket-instructions__icon">&#11088;</span>
-            <div>
-              <strong>1 point</strong> per correct winner. <strong>+1 bonus</strong> for guessing the exact number of games.
+          <div class="how-modal__step">
+            <div class="how-modal__step-num">3</div>
+            <div class="how-modal__step-content">
+              <strong>Earn points</strong>
+              <span>1 pt per correct winner, +1 bonus for exact games</span>
             </div>
           </div>
-          <div class="bracket-instructions__rule">
-            <span class="bracket-instructions__icon">&#128176;</span>
-            <div>
-              <strong>Winner takes all</strong> — most points wins the entire pot.
-            </div>
-          </div>
-          <div class="bracket-instructions__rule bracket-instructions__rule--warn">
-            <span class="bracket-instructions__icon">&#9888;&#65039;</span>
-            <div>
-              Picks are drafts until you hit <strong>Save Changes</strong>. Once saved, they <strong>cannot be changed</strong>.
+          <div class="how-modal__step">
+            <div class="how-modal__step-num">4</div>
+            <div class="how-modal__step-content">
+              <strong>Winner takes all</strong>
+              <span>Most points wins the entire pot</span>
             </div>
           </div>
         </div>
-        <div class="bracket-confirm__actions" style="margin-top: var(--space-lg);">
-          <button class="btn btn--primary js-close-how-modal-btn">Got It</button>
+        <div class="how-modal__warning">
+          Picks are drafts until you <strong>Save</strong>. Once saved, they're <strong>final</strong>.
         </div>
+        <button class="btn btn--primary how-modal__btn js-close-how-modal-btn">Let's Go!</button>
       </div>
     </div>
   `;
