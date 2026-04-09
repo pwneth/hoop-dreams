@@ -192,6 +192,255 @@ export async function handleAuthSubmit(e) {
     }
 }
 
+// --- Bracket Actions ---
+
+// Advancement maps for backfill team name resolution
+const BACKFILL_ADV = {
+  west_playin_1: ['west_r1_4', 'bottom'], east_playin_1: ['east_r1_4', 'bottom'],
+  west_playin_3: ['west_r1_1', 'bottom'], east_playin_3: ['east_r1_1', 'bottom'],
+  west_r1_1: ['west_r2_1', 'top'], west_r1_2: ['west_r2_1', 'bottom'],
+  west_r1_3: ['west_r2_2', 'top'], west_r1_4: ['west_r2_2', 'bottom'],
+  east_r1_1: ['east_r2_1', 'top'], east_r1_2: ['east_r2_1', 'bottom'],
+  east_r1_3: ['east_r2_2', 'top'], east_r1_4: ['east_r2_2', 'bottom'],
+  west_r2_1: ['west_r3_1', 'top'], west_r2_2: ['west_r3_1', 'bottom'],
+  east_r2_1: ['east_r3_1', 'top'], east_r2_2: ['east_r3_1', 'bottom'],
+  west_r3_1: ['finals', 'top'], east_r3_1: ['finals', 'bottom']
+};
+const BACKFILL_PLAYIN = {
+  west_playin_1: ['west_playin_3', 'top', 'loser'], east_playin_1: ['east_playin_3', 'top', 'loser'],
+  west_playin_2: ['west_playin_3', 'bottom', 'winner'], east_playin_2: ['east_playin_3', 'bottom', 'winner']
+};
+
+function buildExpectedTeamMap(matchups, picks) {
+  // Build user's expected bracket from clean base + user picks only
+  const pickMap = {};
+  picks.forEach(p => { pickMap[p.matchupId] = p.pick; });
+
+  const projected = matchups.map(m => ({ ...m, teamTop: m.teamTop || '', teamBottom: m.teamBottom || '' }));
+  // Clear propagated slots
+  projected.forEach(m => {
+    if (m.matchupId.endsWith('_r1_1')) m.teamBottom = '';
+    if (m.matchupId.endsWith('_r1_4')) m.teamBottom = '';
+    if (m.matchupId.endsWith('_playin_3')) { m.teamTop = ''; m.teamBottom = ''; }
+    if (['r2', 'r3', 'finals'].includes(m.round)) { m.teamTop = ''; m.teamBottom = ''; }
+    m.winner = '';
+  });
+
+  const byId = {};
+  projected.forEach(m => { byId[m.matchupId] = m; });
+
+  const rounds = ['playin', 'r1', 'r2', 'r3'];
+  for (const round of rounds) {
+    for (const m of projected) {
+      if (m.round !== round) continue;
+      const pick = pickMap[m.matchupId];
+      if (!pick) continue;
+      const winnerTeam = pick === 'top' ? m.teamTop : m.teamBottom;
+      const loserTeam = pick === 'top' ? m.teamBottom : m.teamTop;
+
+      const pf = BACKFILL_PLAYIN[m.matchupId];
+      if (pf) {
+        const t = byId[pf[0]];
+        if (t) {
+          const team = pf[2] === 'winner' ? winnerTeam : loserTeam;
+          if (team && pf[1] === 'top' && !t.teamTop) t.teamTop = team;
+          if (team && pf[1] === 'bottom' && !t.teamBottom) t.teamBottom = team;
+        }
+      }
+
+      const adv = BACKFILL_ADV[m.matchupId];
+      if (adv && winnerTeam) {
+        const t = byId[adv[0]];
+        if (t) {
+          if (adv[1] === 'top' && !t.teamTop) t.teamTop = winnerTeam;
+          if (adv[1] === 'bottom' && !t.teamBottom) t.teamBottom = winnerTeam;
+        }
+      }
+    }
+  }
+
+  // Build map: "matchupId:pick" -> teamName
+  const teamMap = {};
+  for (const m of projected) {
+    if (m.teamTop) teamMap[m.matchupId + ':top'] = m.teamTop;
+    if (m.teamBottom) teamMap[m.matchupId + ':bottom'] = m.teamBottom;
+  }
+  return teamMap;
+}
+
+export async function refreshBracketData() {
+  setState({ bracketLoading: true });
+  try {
+    const { matchups, picks, scores, buyIn } = await api.fetchBracket();
+    setState({ bracketMatchups: matchups, bracketPicks: picks, bracketScores: scores, bracketBuyIn: buyIn, bracketLoading: false });
+
+    // Backfill pickedTeam for any picks that are missing or incorrect
+    if (picks.length > 0) {
+      const teamMap = buildExpectedTeamMap(matchups, picks);
+      // Check if any picks need updating
+      const needsBackfill = picks.some(p => {
+        const key = p.matchupId + ':' + p.pick;
+        return teamMap[key] && teamMap[key] !== p.pickedTeam;
+      });
+      if (needsBackfill) {
+        await api.backfillPickedTeams(teamMap);
+        const updated = await api.fetchBracket();
+        setState({ bracketMatchups: updated.matchups, bracketPicks: updated.picks, bracketScores: updated.scores, bracketBuyIn: updated.buyIn });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load bracket:', error);
+    setState({ bracketLoading: false });
+  }
+}
+
+export function stageUserPick(matchupId, pick, games, pickedTeam) {
+  const { bracketStagedPicks } = getState();
+  setState({
+    bracketStagedPicks: {
+      ...bracketStagedPicks,
+      [matchupId]: { pick, games: games ? Number(games) : null, pickedTeam: pickedTeam || '' }
+    },
+    bracketPendingPick: null
+  });
+}
+
+export async function handleSaveAllPicks() {
+  const { bracketStagedPicks } = getState();
+  const entries = Object.entries(bracketStagedPicks);
+  if (entries.length === 0) return;
+
+  const picks = entries.map(([matchupId, { pick, games, pickedTeam }]) => ({ matchupId, pick, games, pickedTeam }));
+
+  setState({ bracketSaving: true });
+  try {
+    await api.batchSubmitPicks(picks);
+    const { matchups, picks: serverPicks, scores, buyIn } = await api.fetchBracket();
+    setState({ bracketMatchups: matchups, bracketPicks: serverPicks, bracketScores: scores, bracketBuyIn: buyIn, bracketStagedPicks: {}, bracketSaving: false });
+  } catch (error) {
+    setState({ bracketSaving: false });
+    alert('Failed to save picks: ' + error.message);
+  }
+}
+
+export function stageAdminChange(matchupId, updates) {
+  const { bracketAdminChanges } = getState();
+  const existing = bracketAdminChanges[matchupId] || {};
+  setState({
+    bracketAdminChanges: {
+      ...bracketAdminChanges,
+      [matchupId]: { ...existing, ...updates }
+    }
+  });
+}
+
+export async function handleAdminSaveAll() {
+  const { bracketAdminChanges } = getState();
+  const entries = Object.entries(bracketAdminChanges);
+  if (entries.length === 0) return;
+
+  const updates = entries.map(([matchupId, changes]) => ({ matchupId, ...changes }));
+
+  setState({ bracketSaving: true });
+  try {
+    await api.batchUpdateMatchups(updates);
+    const { matchups, picks, scores, buyIn } = await api.fetchBracket();
+    setState({ bracketMatchups: matchups, bracketPicks: picks, bracketScores: scores, bracketBuyIn: buyIn, bracketAdminChanges: {}, bracketSaving: false });
+  } catch (error) {
+    setState({ bracketSaving: false });
+    alert('Failed to save changes: ' + error.message);
+  }
+}
+
+export async function fetchAndPopulateStandings() {
+  setState({ bracketSaving: true });
+  try {
+    const response = await fetch('https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?region=us&lang=en&contentorigin=espn&type=0&level=2&sort=playoffSeed:asc');
+    const data = await response.json();
+
+    if (!data.children || data.children.length < 2) {
+      throw new Error('Unexpected standings data format');
+    }
+
+    // ESPN returns conferences — find east and west
+    const conferences = {};
+    data.children.forEach(conf => {
+      const name = conf.abbreviation || conf.name || '';
+      if (name.toLowerCase().includes('east') || conf.name?.toLowerCase().includes('eastern')) {
+        conferences.east = conf;
+      } else if (name.toLowerCase().includes('west') || conf.name?.toLowerCase().includes('western')) {
+        conferences.west = conf;
+      }
+    });
+
+    if (!conferences.east || !conferences.west) {
+      throw new Error('Could not identify conferences');
+    }
+
+    // Extract team entries sorted by playoff seed
+    function getSeededTeams(confData) {
+      const entries = confData.standings?.entries || [];
+      return entries
+        .map(entry => ({
+          name: entry.team?.name || '',
+          abbr: entry.team?.abbreviation || '',
+          seed: entry.stats?.find(s => s.name === 'playoffSeed')?.value || 99
+        }))
+        .sort((a, b) => a.seed - b.seed);
+    }
+
+    const westTeams = getSeededTeams(conferences.west);
+    const eastTeams = getSeededTeams(conferences.east);
+
+    // Map seeds to matchups and stage as admin changes
+    // Seed mapping:
+    // Play-in: 7v8 (playin_1), 9v10 (playin_2)
+    // R1: 1v8 (r1_1), 4v5 (r1_2), 3v6 (r1_3), 2v7 (r1_4)
+    function mapConference(conf, teams) {
+      const changes = {};
+      const t = (seed) => teams[seed - 1]?.name || '';
+
+      // Play-in
+      changes[`${conf}_playin_1`] = { teamTop: t(7), teamBottom: t(8) };
+      changes[`${conf}_playin_2`] = { teamTop: t(9), teamBottom: t(10) };
+
+      // R1 — seeds 1-6 are set, 7 and 8 come from play-in so leave them
+      changes[`${conf}_r1_1`] = { teamTop: t(1) };
+      changes[`${conf}_r1_2`] = { teamTop: t(4), teamBottom: t(5) };
+      changes[`${conf}_r1_3`] = { teamTop: t(3), teamBottom: t(6) };
+      changes[`${conf}_r1_4`] = { teamTop: t(2) };
+
+      return changes;
+    }
+
+    const westChanges = mapConference('west', westTeams);
+    const eastChanges = mapConference('east', eastTeams);
+
+    // Merge into admin staged changes
+    const { bracketAdminChanges } = getState();
+    const merged = { ...bracketAdminChanges };
+    for (const [id, updates] of Object.entries({ ...westChanges, ...eastChanges })) {
+      merged[id] = { ...(merged[id] || {}), ...updates };
+    }
+
+    setState({ bracketAdminChanges: merged, bracketSaving: false });
+  } catch (error) {
+    setState({ bracketSaving: false });
+    alert('Failed to fetch standings: ' + error.message);
+  }
+}
+
+export async function handleSetBracketBuyIn(buyIn) {
+  setState({ bracketSaving: true });
+  try {
+    await api.adminSetBracketConfig({ buyIn });
+    setState({ bracketBuyIn: Number(buyIn), bracketSaving: false });
+  } catch (error) {
+    setState({ bracketSaving: false });
+    alert('Failed to set buy-in: ' + error.message);
+  }
+}
+
 export async function handleChangePasswordSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);

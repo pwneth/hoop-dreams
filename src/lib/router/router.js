@@ -32,6 +32,10 @@ export function handleRoute() {
         view = 'bets';
     } else if (internalPath === '/members') {
         view = 'members';
+    } else if (internalPath === '/history') {
+        view = 'history';
+    } else if (internalPath === '/bracket') {
+        view = 'bracket';
     } else {
         // Default route
         view = 'dashboard';

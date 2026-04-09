@@ -248,6 +248,112 @@ export async function markBetAsPaid(betId) {
 }
 
 // ----------------------------------------------------------------------
+// Bracket API
+// ----------------------------------------------------------------------
+
+export async function fetchBracket() {
+  if (!currentUser) return { matchups: [], picks: [], scores: [], buyIn: 0 };
+
+  const result = await apiCall({
+    action: 'getBracket',
+    username: currentUser.username,
+    password: currentUser.password
+  });
+
+  if (result.success) {
+    return {
+      matchups: result.matchups || [],
+      picks: result.picks || [],
+      scores: result.scores || [],
+      buyIn: result.buyIn || 0,
+      locked: result.locked || false
+    };
+  }
+  throw new Error(result.error || 'Failed to fetch bracket');
+}
+
+export async function submitPick(matchupId, pick, games) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  const params = {
+    action: 'submitPick',
+    username: currentUser.username,
+    password: currentUser.password,
+    matchupId,
+    pick
+  };
+  if (games) params.games = games;
+
+  return await apiCall(params);
+}
+
+export async function batchSubmitPicks(picks) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  return await apiCall({
+    action: 'batchSubmitPicks',
+    username: currentUser.username,
+    password: currentUser.password,
+    picks: JSON.stringify(picks)
+  });
+}
+
+export async function adminUpdateMatchup(matchupId, updates) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  return await apiCall({
+    action: 'updateMatchup',
+    username: currentUser.username,
+    password: currentUser.password,
+    matchupId,
+    ...updates
+  });
+}
+
+export async function batchUpdateMatchups(updates) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  return await apiCall({
+    action: 'batchUpdateMatchups',
+    username: currentUser.username,
+    password: currentUser.password,
+    updates: JSON.stringify(updates)
+  });
+}
+
+export async function lockPicks() {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  return await apiCall({
+    action: 'lockPicks',
+    username: currentUser.username,
+    password: currentUser.password
+  });
+}
+
+export async function backfillPickedTeams(teamMap) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  return await apiCall({
+    action: 'backfillPickedTeams',
+    username: currentUser.username,
+    password: currentUser.password,
+    teamMap: JSON.stringify(teamMap)
+  });
+}
+
+export async function adminSetBracketConfig(config) {
+  if (!currentUser) throw new Error('Not authenticated');
+
+  return await apiCall({
+    action: 'setBracketConfig',
+    username: currentUser.username,
+    password: currentUser.password,
+    ...config
+  });
+}
+
+// ----------------------------------------------------------------------
 // Parsing Logic (Unchanged)
 // ----------------------------------------------------------------------
 

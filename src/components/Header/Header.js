@@ -1,8 +1,87 @@
 import { getState, getPendingActionCount, toggleTheme } from '../../lib/store/store.js';
 import { getInitials } from '../../lib/utils/utils.js';
+import { formatCurrency } from '../../lib/utils/utils.js';
 import { logout } from '../../lib/auth/auth.js';
 
 let hasAnimatedBadge = false;
+
+function renderMemberStatsBar(member, label) {
+  const profitSign = member.netProfit > 0 ? '+' : '';
+  return `
+    <div class="stats-bar">
+      <div class="stats-bar__item">
+        <span class="stats-bar__name">${label}</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value">${(member.wins || 0) + (member.losses || 0) + (member.activeBets || 0)}</span>
+        <span class="stats-bar__label">Bets</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value" style="color: #8cff8c;">${member.wins || 0}</span>
+        <span class="stats-bar__label">Won</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value" style="color: #ff8a8a;">${member.losses || 0}</span>
+        <span class="stats-bar__label">Lost</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value">${formatCurrency(member.potentialGain || 0)}</span>
+        <span class="stats-bar__label">Potential</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value" style="color: ${member.netProfit >= 0 ? '#8cff8c' : '#ff8a8a'};">${profitSign}${formatCurrency(member.netProfit)}</span>
+        <span class="stats-bar__label">Net</span>
+      </div>
+    </div>
+  `;
+}
+
+export function renderStatsBar() {
+  const { overallStats, currentView, currentUser, memberStats, bettorFilter } = getState();
+  if (!overallStats || !overallStats.totalBets) return '';
+
+  // My Bets: show current user's stats
+  if (currentView === 'my-bets' && currentUser) {
+    const member = memberStats.find(m => m.name === currentUser.username);
+    if (member) return renderMemberStatsBar(member, currentUser.username);
+  }
+
+  // All Bets with a player selected: show that player's stats
+  if (currentView === 'bets' && bettorFilter && bettorFilter !== 'all') {
+    const member = memberStats.find(m => m.name === bettorFilter);
+    if (member) return renderMemberStatsBar(member, bettorFilter);
+  }
+
+  // Default: overall stats
+  return `
+    <div class="stats-bar">
+      <div class="stats-bar__item">
+        <span class="stats-bar__value">${overallStats.totalBets || 0}</span>
+        <span class="stats-bar__label">Bets</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value">${overallStats.activeBets || 0}</span>
+        <span class="stats-bar__label">Active</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value">${overallStats.completedBets || 0}</span>
+        <span class="stats-bar__label">Done</span>
+      </div>
+      <div class="stats-bar__divider"></div>
+      <div class="stats-bar__item">
+        <span class="stats-bar__value">${formatCurrency(overallStats.totalVolume || 0)}</span>
+        <span class="stats-bar__label">Volume</span>
+      </div>
+    </div>
+  `;
+}
 
 export function renderHeader() {
   const { currentUser, currentView, isDarkMode } = getState();
@@ -41,6 +120,12 @@ export function renderHeader() {
           <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
             Members
           </button>
+          <button class="nav-btn ${currentView === 'history' ? 'active' : ''}" data-path="/history">
+            History
+          </button>
+          <button class="nav-btn ${currentView === 'bracket' ? 'active' : ''}" data-path="/bracket">
+            Bracket
+          </button>
           <button class="nav-btn nav-btn--primary js-new-bet-btn">
             + New Bet
           </button>
@@ -70,6 +155,7 @@ export function renderHeader() {
         </nav>
       </div>
       <div class="nav-overlay" id="navOverlay"></div>
+      ${renderStatsBar()}
     </header>
   `;
 }
@@ -103,7 +189,13 @@ export function renderMobileNav() {
       <button class="nav-btn ${currentView === 'members' ? 'active' : ''}" data-path="/members">
         Members
       </button>
-      
+      <button class="nav-btn ${currentView === 'history' ? 'active' : ''}" data-path="/history">
+        History
+      </button>
+      <button class="nav-btn ${currentView === 'bracket' ? 'active' : ''}" data-path="/bracket">
+        Bracket
+      </button>
+
       <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);">
          <button class="nav-btn js-new-bet-btn" style="background: var(--primary); color: white; justify-content: center;">Place New Bet</button>
          <button class="nav-btn js-logout-btn" style="color: #ff4757; justify-content: center;">Log Out</button>

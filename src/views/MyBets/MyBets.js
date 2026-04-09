@@ -1,5 +1,4 @@
 import { getState } from '../../lib/store/store.js';
-import { renderIndividualStats } from '../../components/Stats/Stats.js';
 import { renderBetCard } from '../../components/BetCard/BetCard.js';
 import { renderActionNeededSection } from '../../components/ActionNeeded/ActionNeeded.js';
 
@@ -17,9 +16,6 @@ export function renderMyBetsView() {
       myBets = myBets.filter(b => b.status === statusFilter);
     }
   }
-
-  // Reuse renderIndividualStats for the current user's summary
-  const statsHtml = renderIndividualStats(currentUser.username);
 
   const filtersHtml = `
     <div class="filters">
@@ -54,7 +50,6 @@ export function renderMyBetsView() {
       </div>
       ${renderActionNeededSection()}
       ${filtersHtml}
-      ${statsHtml}
       ${betsHtml}
     </section>
   `;

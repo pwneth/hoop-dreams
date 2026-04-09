@@ -33,6 +33,13 @@ export function renderLeaderboard() {
         <h2 class="section__title"><span>🏆</span> Leaderboard</h2>
       </div>
       <div class="leaderboard">
+        <div class="leaderboard__item leaderboard__item--header">
+          <div class="leaderboard__rank">#</div>
+          <div class="leaderboard__name">Player</div>
+          <div class="leaderboard__stats">Record</div>
+          <div class="leaderboard__potential">Potential</div>
+          <div class="leaderboard__profit">Net</div>
+        </div>
         ${items}
       </div>
     </section>

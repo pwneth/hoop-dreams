@@ -23,6 +23,24 @@ const initialState = {
     confirmingBetId: null,
     showChangePasswordModal: false,
 
+    // History sort
+    historySort: { key: 'date', dir: 'desc' },
+
+    // Bracket State
+    bracketMatchups: [],
+    bracketPicks: [],
+    bracketScores: [],
+    bracketBuyIn: 0,
+    bracketLoading: false,
+    bracketSaving: false,
+    bracketConference: 'all',
+    bracketPendingPick: null, // { matchupId, pick } — for games picker UI
+    bracketStagedPicks: {}, // { [matchupId]: { pick, games } } — unsaved user picks
+    bracketAdminChanges: {}, // { [matchupId]: { teamTop, teamBottom, winner, gamesPlayed } }
+    bracketAdminPendingWinner: null, // { matchupId, winner }
+    showBracketConfirmModal: false,
+    showBracketHowModal: false,
+
     // Theme State
     isDarkMode: localStorage.getItem('hd_bets_theme') === 'dark'
 };
@@ -57,6 +75,7 @@ export function setMemberStats(stats) { setState({ memberStats: stats }); }
 export function setOverallStats(stats) { setState({ overallStats: stats }); }
 export function setStatusFilter(filter) { setState({ statusFilter: filter }); }
 export function setBettorFilter(filter) { setState({ bettorFilter: filter }); }
+export function setHistorySort(sort) { setState({ historySort: sort }); }
 export function toggleTheme() {
     const newMode = !state.isDarkMode;
     setState({ isDarkMode: newMode });

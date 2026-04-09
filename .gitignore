@@ -15,6 +15,9 @@ dist-ssr
 # Apps Script contains sensitive credentials
 google-apps-script/
 
+# Local credentials reference
+credentials.md
+
 # Editor directories and files
 .env
 .env.local
