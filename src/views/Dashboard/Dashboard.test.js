@@ -16,6 +16,5 @@ describe('Dashboard View', () => {
         expect(html).toContain('Leaderboard');
         expect(html).toContain('Filters');
         expect(html).toContain('BetTable');
-        expect(html).toContain('Place New Bet');
     });
 });

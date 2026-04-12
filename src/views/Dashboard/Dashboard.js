@@ -5,9 +5,6 @@ import { renderFilters } from '../../components/BetList/BetList.js';
 
 export function renderDashboardView() {
   return `
-    <div class="mobile-only-action">
-      <button class="btn btn--primary btn--full" id="dashNewBetBtn">Place New Bet</button>
-    </div>
     <div class="dashboard-layout">
       <aside class="dashboard-layout__sidebar">
         <section class="section">

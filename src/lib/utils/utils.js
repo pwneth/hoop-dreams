@@ -60,7 +60,7 @@ export function renderUserTag(name, state) {
 
   const profileData = `data-profile-name="${name}" data-profile-avatar="${avatar}" data-profile-paypal="${paypal}" data-profile-net="${net}" data-profile-record="${record}"`;
 
-  return `<span class="user-tag" style="background:${color.bg};color:${color.text}" ${profileData}>${avatar ? `<img class="user-tag__avatar" src="${avatar}" />` : `<span class="user-tag__initial">${name.charAt(0)}</span>`}${name}</span>`;
+  return `<span class="user-tag" style="--tag-color:${color.bg}" ${profileData}><span class="user-tag__icon" ${avatar ? `style="background-image:url('${avatar}')"` : ''}>${name.charAt(0)}</span>${name}</span>`;
 }
 
 export function getOtherBetter(bet, user) {

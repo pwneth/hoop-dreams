@@ -1,5 +1,5 @@
 import { getState, getPendingActionCount, getPendingBets, toggleTheme } from '../../lib/store/store.js';
-import { getInitials } from '../../lib/utils/utils.js';
+import { getInitials, getAvatarColor } from '../../lib/utils/utils.js';
 import { formatCurrency } from '../../lib/utils/utils.js';
 import { logout } from '../../lib/auth/auth.js';
 
@@ -41,7 +41,7 @@ function renderMemberStatsBar(member, label) {
   `;
 }
 
-function renderActionBar() {
+export function renderActionBar() {
   const count = getPendingActionCount();
   if (count === 0) return '';
   return `
@@ -123,17 +123,9 @@ export function renderHeader() {
               Bracket
             </button>
             ${currentUser ? `
-              <button class="nav-btn nav-btn--primary js-new-bet-btn">
-                + New Bet
-              </button>
               <div class="header__user">
                  <div class="user-dropdown" id="userDropdownTrigger">
-                   <div class="user-badge" title="Logged in as ${user.username}">
-                     ${userAvatar ? `<img class="user-badge__avatar" src="${userAvatar}" />` : `<div class="user-badge__icon">${getInitials(user.username)}</div>`}
-                     <span>${user.username}</span>
-                     ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
-                     <span style="font-size: 0.7em; margin-left: 4px; opacity: 0.5;">▼</span>
-                   </div>
+                   <span class="user-tag user-tag--nav" style="--tag-color:${getAvatarColor(user.username).bg}"><span class="user-tag__icon" ${userAvatar ? `style="background-image:url('${userAvatar}')"` : ''}>${user.username.charAt(0)}</span>${user.username}${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}<span class="user-tag__arrow">▼</span></span>
                    <div class="user-dropdown-menu" id="userDropdownMenu">
                      <button class="user-dropdown-item js-change-pw-btn">
                        <span>🔑</span> Change Password
@@ -150,14 +142,11 @@ export function renderHeader() {
                    </div>
                  </div>
               </div>
-            ` : `
-              <button class="nav-btn nav-btn--primary js-logo-link" data-path="/">Sign In</button>
-            `}
+            ` : ''}
           </nav>
         </div>
       </div>
       <div class="nav-overlay" id="navOverlay"></div>
-      ${renderActionBar()}
     </header>
   `;
 }
@@ -187,7 +176,6 @@ export function renderMobileNav() {
       </button>
 
       <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);">
-         <button class="nav-btn js-new-bet-btn" style="background: var(--primary); color: white; justify-content: center;">Place New Bet</button>
          <button class="nav-btn js-logout-btn" style="color: #ff4757; justify-content: center;">Log Out</button>
          <button class="nav-btn js-theme-toggle" style="justify-content: center;">
              ${isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}

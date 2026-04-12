@@ -1,43 +1,105 @@
 import { getState } from '../../lib/store/store.js';
 import { LEAGUE_MEMBERS } from '../../api/api.js';
+import { getAvatarColor } from '../../lib/utils/utils.js';
 
 export function renderSettingsModal() {
-  const { showSettingsModal, userPaypal, userEmail, userAvatar, settingsSaving } = getState();
+  const { showSettingsModal, userPaypal, userEmail, userAvatar, settingsSaving, currentUser } = getState();
   if (!showSettingsModal) return '';
+
+  const username = currentUser ? currentUser.username : '';
+  const color = getAvatarColor(username);
 
   return `
     <div class="modal-overlay" id="settingsModalOverlay">
-      <div class="modal">
-        <div class="modal__header">
-          <h2 class="modal__title">Settings</h2>
-          <button class="modal__close" id="closeSettingsBtn">&times;</button>
+      <div class="modal new-bet-modal settings-modal">
+        <div class="new-bet-modal__header">
+          <button class="new-bet-modal__close" id="closeSettingsBtn">&times;</button>
+          <div class="settings-modal__avatar-preview">
+            ${userAvatar
+              ? `<img src="${userAvatar}" class="settings-modal__avatar-img" />`
+              : `<div class="settings-modal__avatar-placeholder" style="background:${color.bg}">${username.charAt(0)}</div>`
+            }
+          </div>
+          <h2 class="new-bet-modal__title">${username}</h2>
+          <p class="new-bet-modal__subtitle">Manage your profile</p>
         </div>
-        <div class="modal__form" style="padding: var(--space-lg);">
-          <div class="form-group">
-            <label class="form-label">Profile Picture URL</label>
-            <div style="display: flex; gap: var(--space-sm); align-items: center;">
-              <input type="url" class="form-input" id="avatarInput" value="${userAvatar || ''}" placeholder="https://example.com/photo.jpg" style="flex: 1;" />
-              ${userAvatar ? `<img src="${userAvatar}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />` : ''}
+        <div class="settings-modal__body">
+          <div class="settings-modal__section">
+            <div class="settings-modal__section-header">
+              <span class="settings-modal__section-icon">&#128100;</span>
+              <span class="settings-modal__section-title">Profile</span>
+            </div>
+            <div class="settings-modal__field">
+              <label class="settings-modal__label">Display Name</label>
+              <input type="text" class="form-input" id="displayNameInput" value="${username}" placeholder="Your name" />
+            </div>
+            <div class="settings-modal__field">
+              <label class="settings-modal__label">Profile Picture URL</label>
+              <input type="url" class="form-input" id="avatarInput" value="${userAvatar || ''}" placeholder="https://example.com/photo.jpg" />
+              <span class="settings-modal__hint">Paste a link to your profile photo</span>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-input" id="emailInput" value="${userEmail || ''}" placeholder="your@email.com" />
-            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">
-              You can use your email to sign in instead of your username.
-            </p>
+          <div class="settings-modal__section">
+            <div class="settings-modal__section-header">
+              <span class="settings-modal__section-icon">&#128231;</span>
+              <span class="settings-modal__section-title">Account</span>
+            </div>
+            <div class="settings-modal__field">
+              <label class="settings-modal__label">Email</label>
+              <input type="email" class="form-input" id="emailInput" value="${userEmail || ''}" placeholder="your@email.com" />
+              <span class="settings-modal__hint">You can use your email to sign in instead of your username</span>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">PayPal Username</label>
-            <input type="text" class="form-input" id="paypalInput" value="${userPaypal || ''}" placeholder="e.g. @username or email" />
-            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">
-              Other members will see a Pay link next to your name when they owe you money.
-            </p>
+          <div class="settings-modal__section">
+            <div class="settings-modal__section-header">
+              <span class="settings-modal__section-icon">&#128179;</span>
+              <span class="settings-modal__section-title">Payments</span>
+            </div>
+            <div class="settings-modal__field">
+              <label class="settings-modal__label">PayPal Username</label>
+              <input type="text" class="form-input" id="paypalInput" value="${userPaypal || ''}" placeholder="e.g. @username or email" />
+              <span class="settings-modal__hint">Others will see a Pay link when they owe you money</span>
+            </div>
           </div>
-          <div class="form-actions">
+          <div class="settings-modal__actions">
             <button type="button" class="btn btn--secondary" id="cancelSettingsBtn" ${settingsSaving ? 'disabled' : ''}>Cancel</button>
-            <button type="button" class="btn btn--primary" id="saveSettingsBtn" ${settingsSaving ? 'disabled' : ''}>${settingsSaving ? 'Saving...' : 'Save'}</button>
+            <button type="button" class="btn btn--primary" id="saveSettingsBtn" ${settingsSaving ? 'disabled' : ''}>${settingsSaving ? 'Saving...' : 'Save Changes'}</button>
           </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function renderOnboardingModal() {
+  const { showOnboardingModal, currentUser } = getState();
+  if (!showOnboardingModal || !currentUser) return '';
+
+  return `
+    <div class="modal-overlay" id="onboardingOverlay">
+      <div class="modal new-bet-modal">
+        <div class="new-bet-modal__header">
+          <span class="new-bet-modal__icon">&#127881;</span>
+          <h2 class="new-bet-modal__title">Welcome to HD Bets!</h2>
+          <p class="new-bet-modal__subtitle">Set up your profile to get started</p>
+        </div>
+        <div style="padding: var(--space-lg);">
+          <div class="login-form__group">
+            <label class="login-form__label">Your Display Name</label>
+            <input type="text" class="login-form__input" id="onboardName" value="${currentUser.username}" placeholder="Your first name" />
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">This is how others will see you</p>
+          </div>
+          <div class="login-form__group">
+            <label class="login-form__label">PayPal Username <span style="color: var(--text-muted); font-weight: 400;">(optional)</span></label>
+            <input type="text" class="login-form__input" id="onboardPaypal" placeholder="e.g. @username or email" />
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">For receiving payments from bets you win</p>
+          </div>
+          <div class="login-form__group">
+            <label class="login-form__label">Profile Picture URL <span style="color: var(--text-muted); font-weight: 400;">(optional)</span></label>
+            <input type="url" class="login-form__input" id="onboardAvatar" placeholder="https://example.com/photo.jpg" />
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">You can update all of this later in Settings</p>
+          </div>
+          <button class="login-form__submit" id="onboardSaveBtn" type="button">Let's Go!</button>
         </div>
       </div>
     </div>
@@ -49,12 +111,14 @@ export function renderChangePasswordModal() {
   if (!showChangePasswordModal) return '';
   return `
   <div class="modal-overlay" id="pwModalOverlay">
-    <div class="modal">
-      <div class="modal__header">
-        <h2 class="modal__title">Change Password</h2>
-        <button class="modal__close" id="closePwModalBtn">&times;</button>
+    <div class="modal new-bet-modal">
+      <div class="new-bet-modal__header">
+        <button class="new-bet-modal__close" id="closePwModalBtn">&times;</button>
+        <span class="new-bet-modal__icon">&#128272;</span>
+        <h2 class="new-bet-modal__title">Change Password</h2>
+        <p class="new-bet-modal__subtitle">Keep your account secure</p>
       </div>
-      <form class="modal__form" id="changePwForm">
+      <form style="padding: var(--space-lg);" id="changePwForm">
         <div class="form-group">
           <label class="form-label">Old Password</label>
           <input type="password" class="form-input" name="oldPassword" required />
@@ -86,9 +150,21 @@ export function renderNewBetModal() {
     return name.toLowerCase() !== 'pot' && name !== currentUser.username;
   });
 
+  const state = getState();
+  const allAvatars = state.allAvatars || {};
+
   const betterOptions = allBetters.map(m => {
     const name = (typeof m === 'object' && m !== null) ? (m.username || m.name || 'User') : String(m);
     return `<option value="${name}">${name}</option>`;
+  }).join('');
+
+  const betterCards = allBetters.map(m => {
+    const name = (typeof m === 'object' && m !== null) ? (m.username || m.name || 'User') : String(m);
+    const color = getAvatarColor(name);
+    const avatar = allAvatars[name] || '';
+    return `<div class="user-select__option js-user-select-option" data-value="${name}" data-target="better2Select">
+      <span class="user-tag" style="--tag-color:${color.bg}"><span class="user-tag__icon" ${avatar ? `style="background-image:url('${avatar}')"` : ''}>${name.charAt(0)}</span>${name}</span>
+    </div>`;
   }).join('');
 
   const loadingClass = isSubmitting ? 'is-loading' : '';
@@ -97,68 +173,106 @@ export function renderNewBetModal() {
 
   return `
   <div class="modal-overlay ${loadingClass} ${successClass}" id="modalOverlay">
-    <div class="modal" id="modalContainer">
+    <div class="modal new-bet-modal" id="modalContainer">
       <!-- Loader Overlay -->
       <div class="modal-overlay-loader">
-        <div class="basketball-loader">🏀</div>
-        <p style="margin-top: var(--space-lg); font-weight: 700; color: var(--text-primary); letter-spacing: 1px; font-size: 0.9rem;">LOCKING IN YOUR BET...</p>
+        <div class="basketball-loader">&#127936;</div>
+        <p style="margin-top: var(--space-lg); font-weight: 700; color: white; letter-spacing: 1px; font-size: 0.9rem;">LOCKING IN YOUR BET...</p>
       </div>
 
       <!-- Success Overlay -->
       <div class="modal-overlay-success">
-        <div class="success-icon">🎲</div>
-        <p class="success-text">Bet Placed Successfully!</p>
-        <p class="success-subtext">Good luck to both bettors! May the best baller win. 🏀</p>
+        <div class="success-icon">&#127881;</div>
+        <p class="success-text">Bet Placed!</p>
+        <p class="success-subtext">May the best baller win &#127936;</p>
       </div>
 
-      <!-- Main Form Content -->
-      <div class="modal__header">
-        <h2 class="modal__title">New Bet</h2>
-        <button class="modal__close" id="closeModalBtn">&times;</button>
+      <!-- Header -->
+      <div class="new-bet-modal__header">
+        <button class="new-bet-modal__close" id="closeModalBtn">&times;</button>
+        <span class="new-bet-modal__icon">&#127942;</span>
+        <h2 class="new-bet-modal__title">New Bet</h2>
+        <p class="new-bet-modal__subtitle">Challenge a friend and put your money where your mouth is</p>
       </div>
+
       <p id="newBetError" class="error-message" style="margin: 0 var(--space-lg); display: none;"></p>
-      <form class="modal__form" id="newBetForm">
-        <div class="form-group" style="margin-bottom: var(--space-lg);">
-          <label class="form-label" style="display: block; margin-bottom: var(--space-sm);">Who are you betting against?</label>
-          <div class="betters-row" style="display: flex; align-items: center; gap: var(--space-md);">
-            <div style="flex: 1; padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--radius-md); text-align: center; font-weight: 700; border: 1px solid var(--border-medium);">
-              ${me} (You)
+
+      <form class="new-bet-modal__form" id="newBetForm">
+        <!-- Step 1: Opponent -->
+        <div class="new-bet-modal__step">
+          <div class="new-bet-modal__step-label">
+            <span class="new-bet-modal__step-num">1</span>
+            <span>Who are you betting against?</span>
+          </div>
+          <div class="new-bet-modal__matchup">
+            <div class="new-bet-modal__player">
+              <span class="new-bet-modal__player-label">You</span>
+              <span class="user-tag" style="--tag-color:${getAvatarColor(me).bg}"><span class="user-tag__icon" ${allAvatars[me] ? `style="background-image:url('${allAvatars[me]}')"` : ''}>${me.charAt(0)}</span>${me}</span>
               <input type="hidden" name="better1" value="${me}" />
             </div>
-            <span style="font-weight: 700; color: var(--text-muted); flex-shrink: 0;">VS</span>
-            <select class="form-select" name="better2" id="better2Select" style="flex: 1;" required>
-              <option value="">Select opponent...</option>
-              ${betterOptions}
-            </select>
+            <span class="new-bet-modal__vs">VS</span>
+            <div class="new-bet-modal__player">
+              <span class="new-bet-modal__player-label">Opponent</span>
+              <div class="user-select" id="better2UserSelect">
+                <input type="hidden" name="better2" id="better2Select" value="" />
+                <div class="user-select__trigger" id="better2Trigger">
+                  <span class="user-select__placeholder">Choose...</span>
+                </div>
+                <div class="user-select__dropdown">
+                  ${betterCards}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Your Bet</label>
-            <textarea class="form-textarea" name="better1Bet" placeholder="e.g. Knicks win" required></textarea>
+        <!-- Step 2: What's the bet? -->
+        <div class="new-bet-modal__step">
+          <div class="new-bet-modal__step-label">
+            <span class="new-bet-modal__step-num">2</span>
+            <span>What's the bet?</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Opponent's Bet</label>
-            <textarea class="form-textarea" name="better2Bet" placeholder="e.g. Knicks lose" required></textarea>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Your Stake (€)</label>
-            <input type="number" class="form-input" name="better1Reward" min="1" step="0.01" placeholder="20.00" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Opponent's Stake (€)</label>
-            <input type="number" class="form-input" name="better2Reward" min="1" step="0.01" placeholder="20.00" required />
+          <div class="new-bet-modal__bets">
+            <div class="new-bet-modal__bet-side">
+              <label class="new-bet-modal__bet-label">Your prediction</label>
+              <textarea class="new-bet-modal__textarea" name="better1Bet" placeholder="e.g. Knicks win the series" required></textarea>
+            </div>
+            <div class="new-bet-modal__bet-side">
+              <label class="new-bet-modal__bet-label">Their prediction</label>
+              <textarea class="new-bet-modal__textarea" name="better2Bet" placeholder="e.g. Celtics win the series" required></textarea>
+            </div>
           </div>
         </div>
 
-        <div class="form-actions">
+        <!-- Step 3: Stakes -->
+        <div class="new-bet-modal__step">
+          <div class="new-bet-modal__step-label">
+            <span class="new-bet-modal__step-num">3</span>
+            <span>Set the stakes</span>
+          </div>
+          <div class="new-bet-modal__stakes">
+            <div class="new-bet-modal__stake">
+              <label class="new-bet-modal__bet-label">You risk</label>
+              <div class="new-bet-modal__stake-input">
+                <span class="new-bet-modal__currency">&#8364;</span>
+                <input type="number" class="new-bet-modal__amount" name="better1Reward" min="1" step="0.01" placeholder="20.00" required />
+              </div>
+            </div>
+            <div class="new-bet-modal__stake">
+              <label class="new-bet-modal__bet-label">They risk</label>
+              <div class="new-bet-modal__stake-input">
+                <span class="new-bet-modal__currency">&#8364;</span>
+                <input type="number" class="new-bet-modal__amount" name="better2Reward" min="1" step="0.01" placeholder="20.00" required />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="new-bet-modal__actions">
           <button type="button" class="btn btn--secondary" id="cancelBetBtn">Cancel</button>
-          <button type="submit" class="btn btn--primary" ${isSubmitting ? 'disabled' : ''}>
-            ${isSubmitting ? 'Submitting...' : 'Place Bet'}
+          <button type="submit" class="btn btn--primary new-bet-modal__submit" ${isSubmitting ? 'disabled' : ''}>
+            ${isSubmitting ? 'Placing Bet...' : '&#127936; Place Bet'}
           </button>
         </div>
       </form>

@@ -10,7 +10,7 @@ import {
 } from './lib/store/store.js';
 import { navigateTo, handleRoute } from './lib/router/router.js';
 import { logout } from './lib/auth/auth.js';
-import { handleNewBetSubmit, handleResolveBet, handleConfirmBet, handleResolvePayment, handleAuthSubmit, handleChangePasswordSubmit, refreshData, stageUserPick, handleSaveAllPicks, stageAdminChange, handleAdminSaveAll, handleSetBracketBuyIn, fetchAndPopulateStandings, refreshBracketData, loadUserSettings, handleSaveSettings } from './lib/actions/actions.js';
+import { handleNewBetSubmit, handleResolveBet, handleConfirmBet, handleResolvePayment, handleAuthSubmit, handleChangePasswordSubmit, refreshData, stageUserPick, handleSaveAllPicks, stageAdminChange, handleAdminSaveAll, handleSetBracketBuyIn, fetchAndPopulateStandings, refreshBracketData, loadUserSettings, handleSaveSettings, handleOnboardingSave } from './lib/actions/actions.js';
 
 // Views
 import { renderDashboardView } from './views/Dashboard/Dashboard.js';
@@ -20,7 +20,7 @@ import { renderBracketView, renderBracketSavingOverlay, renderBracketConfirmModa
 import { renderHeader, renderMobileNav, renderStatsBar } from './components/Header/Header.js';
 import { renderLoginScreen } from './components/Login/Login.js';
 import { renderBetActionModal } from './components/BetTable/BetTable.js';
-import { renderNewBetModal, renderChangePasswordModal, renderSettingsModal } from './components/Modals/Modals.js';
+import { renderNewBetModal, renderChangePasswordModal, renderSettingsModal, renderOnboardingModal } from './components/Modals/Modals.js';
 import { renderLoading } from './components/Loader/Loader.js';
 
 const app = document.getElementById('app');
@@ -33,10 +33,37 @@ function render(target = 'all') {
   const state = getState();
   const { currentView, showNewBetModal, isSubmitting, submitSuccess, showChangePasswordModal, currentUser } = state;
 
-  // If not logged in, allow bracket view but show login for everything else
+  // If not logged in, show login inside normal layout (except bracket which has its own handling)
   if (!currentUser && currentView !== 'bracket') {
-    if (app.innerHTML !== renderLoginScreen()) {
-      app.innerHTML = renderLoginScreen();
+    if (target === 'all' || target === 'app') {
+      const BASE = import.meta.env.BASE_URL || '/';
+      app.innerHTML = `
+        <div class="nav-overlay" id="navOverlay"></div>
+        ${renderMobileNav()}
+        ${renderHeader()}
+        <main class="main">
+          ${renderLoginScreen()}
+        </main>
+        <footer class="footer">
+          <div class="footer__inner">
+            <div class="footer__top">
+              <div class="footer__brand">
+                <img src="${BASE}header_logo.png" class="footer__logo" alt="HD Bets" />
+                <div>
+                  <div class="footer__title">HD Bets!</div>
+                  <div class="footer__tagline">Fantasy Basketball Betting League</div>
+                </div>
+              </div>
+              <div class="footer__links">
+                <button class="footer__link nav-btn" data-path="/">Bets</button>
+                <button class="footer__link nav-btn" data-path="/bracket">Bracket</button>
+              </div>
+            </div>
+            <div class="footer__copy">&copy; ${new Date().getFullYear()} HD Bets. All rights reserved.</div>
+          </div>
+        </footer>
+      `;
+      attachEventListeners();
       attachLoginListeners();
     }
     return;
@@ -86,6 +113,7 @@ function render(target = 'all') {
 
   if (target === 'all' || target === 'app') {
     const hadBottomBar = !!document.querySelector('.bracket-bottom-bar');
+    const hadFab = !!document.querySelector('.fab');
     app.innerHTML = `
       <div class="nav-overlay" id="navOverlay"></div>
       ${renderMobileNav()}
@@ -93,6 +121,12 @@ function render(target = 'all') {
       <main class="main">
         ${mainContent}
       </main>
+      ${state.currentUser && (state.currentView === 'dashboard') ? `
+        <button class="fab js-new-bet-btn ${hadFab ? 'fab--visible' : ''}" id="newBetFab" aria-label="New Bet">
+          <span class="fab__icon">+</span>
+          <span class="fab__label">New Bet</span>
+        </button>
+      ` : ''}
       <footer class="footer">
         <div class="footer__inner">
           <div class="footer__top">
@@ -117,6 +151,10 @@ function render(target = 'all') {
     if (bottomBar && !hadBottomBar) {
       bottomBar.classList.add('bracket-bottom-bar--entering');
     }
+    const fab = document.getElementById('newBetFab');
+    if (fab && !hadFab) {
+      requestAnimationFrame(() => fab.classList.add('fab--visible'));
+    }
   }
 
   // Modals
@@ -140,6 +178,8 @@ function render(target = 'all') {
         } else {
           modalsEl.innerHTML = renderNewBetModal();
         }
+      } else if (state.showOnboardingModal) {
+        modalsEl.innerHTML = renderOnboardingModal();
       } else if (showChangePasswordModal) {
         modalsEl.innerHTML = renderChangePasswordModal();
       } else if (state.showSettingsModal) {
@@ -186,10 +226,17 @@ function attachLoginListeners() {
   }
 }
 
-// Global listener for auth mode change
-window.addEventListener('auth-mode-changed', attachLoginListeners);
-
 function attachEventListeners() {
+  // Login form (if visible)
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.onsubmit = handleAuthSubmit;
+  }
+  const authLoginBtn = document.getElementById('authLoginBtn');
+  const authRegisterBtn = document.getElementById('authRegisterBtn');
+  if (authLoginBtn) authLoginBtn.onclick = () => window.setAuthMode('login');
+  if (authRegisterBtn) authRegisterBtn.onclick = () => window.setAuthMode('register');
+
   // Navigation
   document.querySelectorAll('.nav-btn[data-path]').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -232,12 +279,6 @@ function attachEventListeners() {
     });
   });
 
-  const bettorFilterSelect = document.getElementById('bettorFilterSelect');
-  if (bettorFilterSelect) {
-    bettorFilterSelect.onchange = (e) => {
-      setBettorFilter(e.target.value);
-    };
-  }
 
   document.querySelectorAll('.js-show-my-bets').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -296,20 +337,36 @@ function attachEventListeners() {
   if (closeSettingsBtn) closeSettingsBtn.onclick = () => setState({ showSettingsModal: false });
   if (cancelSettingsBtn) cancelSettingsBtn.onclick = () => setState({ showSettingsModal: false });
   if (settingsOverlay) settingsOverlay.onclick = (e) => { if (e.target === settingsOverlay) setState({ showSettingsModal: false }); };
-  if (saveSettingsBtn) saveSettingsBtn.onclick = () => {
+  if (saveSettingsBtn) saveSettingsBtn.onclick = async () => {
     const paypalInput = document.getElementById('paypalInput');
     const emailInput = document.getElementById('emailInput');
     const avatarInput = document.getElementById('avatarInput');
-    // Capture values before any re-render
+    const nameInput = document.getElementById('displayNameInput');
     const values = {
       paypal: paypalInput ? paypalInput.value.trim() : undefined,
       email: emailInput ? emailInput.value.trim() : undefined,
       avatar: avatarInput ? avatarInput.value.trim() : undefined
     };
-    // Disable buttons manually instead of re-rendering
+    const newName = nameInput ? nameInput.value.trim() : '';
     saveSettingsBtn.disabled = true;
     saveSettingsBtn.textContent = 'Saving...';
     if (cancelSettingsBtn) cancelSettingsBtn.disabled = true;
+
+    // Update name if changed
+    const { currentUser: cu } = getState();
+    if (newName && cu && newName !== cu.username) {
+      try {
+        const { updateDisplayName } = await import('./api/api.js');
+        await updateDisplayName(newName);
+        setState({ currentUser: { ...cu, username: newName } });
+      } catch (err) {
+        alert('Failed to update name: ' + err.message);
+        saveSettingsBtn.disabled = false;
+        saveSettingsBtn.textContent = 'Save';
+        if (cancelSettingsBtn) cancelSettingsBtn.disabled = false;
+        return;
+      }
+    }
     handleSaveSettings(values);
   };
 
@@ -317,8 +374,6 @@ function attachEventListeners() {
     btn.addEventListener('click', toggleTheme);
   });
 
-  const dashNewBetBtn = document.getElementById('dashNewBetBtn');
-  if (dashNewBetBtn) dashNewBetBtn.onclick = () => setState({ showNewBetModal: true });
 
   const toastViewBtn = document.getElementById('toastViewBtn');
   if (toastViewBtn) toastViewBtn.onclick = () => {
@@ -390,6 +445,46 @@ function attachEventListeners() {
   });
 }
 
+// User select dropdowns (open/close/select)
+document.addEventListener('click', (e) => {
+  // Toggle open
+  const trigger = e.target.closest('.user-select__trigger');
+  if (trigger) {
+    const select = trigger.closest('.user-select');
+    // Close all other open selects
+    document.querySelectorAll('.user-select--open').forEach(s => {
+      if (s !== select) s.classList.remove('user-select--open');
+    });
+    select.classList.toggle('user-select--open');
+    return;
+  }
+
+  // Bettor filter select
+  const bettorOption = e.target.closest('.js-bettor-select-option');
+  if (bettorOption) {
+    setBettorFilter(bettorOption.dataset.value);
+    bettorOption.closest('.user-select').classList.remove('user-select--open');
+    return;
+  }
+
+  // New bet opponent select
+  const userOption = e.target.closest('.js-user-select-option');
+  if (userOption) {
+    const value = userOption.dataset.value;
+    const hiddenInput = document.getElementById(userOption.dataset.target);
+    const triggerEl = userOption.closest('.user-select').querySelector('.user-select__trigger');
+    if (hiddenInput) hiddenInput.value = value;
+    if (triggerEl) {
+      triggerEl.innerHTML = userOption.innerHTML;
+    }
+    userOption.closest('.user-select').classList.remove('user-select--open');
+    return;
+  }
+
+  // Close all selects on outside click
+  document.querySelectorAll('.user-select--open').forEach(s => s.classList.remove('user-select--open'));
+});
+
 // Close team selectors when clicking outside
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.team-selector')) {
@@ -443,26 +538,32 @@ if (app) {
       return;
     }
 
-    // Resolve Winner
-    const winnerBtn = e.target.closest('.resolve-winner-btn');
-    if (winnerBtn) {
-      const winner = winnerBtn.dataset.winner;
-      const betId = winnerBtn.dataset.id;
-      setState({ confirmingResolution: { id: betId, winner: winner } });
-    }
-
-    // Confirm Resolution
-    if (e.target.matches('.confirm-resolve-btn')) {
-      const { confirmingResolution } = getState();
-      if (confirmingResolution) {
-        setState({ resolveBetId: confirmingResolution.id, confirmingResolution: null });
-        handleResolveBet(confirmingResolution.winner);
+    // Pick Winner — select card inline
+    const pickWinnerBtn = e.target.closest('.js-pick-winner');
+    if (pickWinnerBtn) {
+      const allPicks = document.querySelectorAll('.js-pick-winner');
+      allPicks.forEach(p => p.classList.remove('bet-modal__pick--selected'));
+      pickWinnerBtn.classList.add('bet-modal__pick--selected');
+      const bar = document.getElementById('winnerConfirmBar');
+      const nameEl = document.getElementById('winnerConfirmName');
+      const confirmBtn = document.getElementById('confirmResolveBtn');
+      if (bar && nameEl && confirmBtn) {
+        nameEl.textContent = pickWinnerBtn.dataset.name;
+        confirmBtn.dataset.id = pickWinnerBtn.dataset.id;
+        confirmBtn.dataset.winner = pickWinnerBtn.dataset.winner;
+        bar.style.display = '';
       }
     }
 
-    // Cancel Resolution
-    if (e.target.closest('.cancel-resolve-btn')) {
-      setState({ confirmingResolution: null });
+    // Confirm Resolution
+    if (e.target.closest('.confirm-resolve-btn')) {
+      const btn = e.target.closest('.confirm-resolve-btn');
+      const betId = btn.dataset.id;
+      const winner = btn.dataset.winner;
+      if (betId && winner) {
+        setState({ resolveBetId: betId, showBetActionModal: null });
+        handleResolveBet(winner);
+      }
     }
 
     // Confirm Bet Action
@@ -655,28 +756,33 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  // Resolve winner
-  const winnerBtn = e.target.closest('.resolve-winner-btn');
-  if (winnerBtn) {
-    const winner = winnerBtn.dataset.winner;
-    const betId = winnerBtn.dataset.id;
-    setState({ confirmingResolution: { id: betId, winner: winner } });
-    return;
-  }
-
-  // Confirm resolution
-  if (e.target.matches('.confirm-resolve-btn')) {
-    const { confirmingResolution } = getState();
-    if (confirmingResolution) {
-      setState({ resolveBetId: confirmingResolution.id, confirmingResolution: null, showBetActionModal: null });
-      handleResolveBet(confirmingResolution.winner);
+  // Pick Winner — select card inline
+  const pickWinnerBtn = e.target.closest('.js-pick-winner');
+  if (pickWinnerBtn) {
+    const allPicks = document.querySelectorAll('.js-pick-winner');
+    allPicks.forEach(p => p.classList.remove('bet-modal__pick--selected'));
+    pickWinnerBtn.classList.add('bet-modal__pick--selected');
+    const bar = document.getElementById('winnerConfirmBar');
+    const nameEl = document.getElementById('winnerConfirmName');
+    const confirmBtn = document.getElementById('confirmResolveBtn');
+    if (bar && nameEl && confirmBtn) {
+      nameEl.textContent = pickWinnerBtn.dataset.name;
+      confirmBtn.dataset.id = pickWinnerBtn.dataset.id;
+      confirmBtn.dataset.winner = pickWinnerBtn.dataset.winner;
+      bar.style.display = '';
     }
     return;
   }
 
-  // Cancel resolution
-  if (e.target.closest('.cancel-resolve-btn')) {
-    setState({ confirmingResolution: null });
+  // Confirm resolution
+  if (e.target.closest('.confirm-resolve-btn')) {
+    const btn = e.target.closest('.confirm-resolve-btn');
+    const betId = btn.dataset.id;
+    const winner = btn.dataset.winner;
+    if (betId && winner) {
+      setState({ resolveBetId: betId, showBetActionModal: null });
+      handleResolveBet(winner);
+    }
     return;
   }
 
@@ -685,6 +791,19 @@ document.addEventListener('click', (e) => {
     const betId = e.target.dataset.id;
     setState({ showBetActionModal: null });
     handleResolvePayment(betId);
+    return;
+  }
+});
+
+// Onboarding modal save
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'onboardSaveBtn') {
+    const name = document.getElementById('onboardName')?.value.trim();
+    const paypal = document.getElementById('onboardPaypal')?.value.trim();
+    const avatar = document.getElementById('onboardAvatar')?.value.trim();
+    e.target.disabled = true;
+    e.target.textContent = 'Saving...';
+    handleOnboardingSave(name, paypal, avatar);
     return;
   }
 });
@@ -731,7 +850,7 @@ document.addEventListener('click', (e) => {
 // BRACKET COUNTDOWN TIMER
 // ==========================================
 
-const PICKS_OPEN = new Date('2026-04-14T06:00:00Z');
+const PICKS_OPEN = new Date('2026-04-13T05:00:00Z');
 setInterval(() => {
   const el = document.getElementById('bracketCountdown');
   if (!el) return;
@@ -761,7 +880,7 @@ let profileHideTimer = null;
 
 document.addEventListener('mousemove', (e) => {
   const tag = e.target.closest('.user-tag');
-  if (tag) {
+  if (tag && !tag.closest('.user-select__dropdown') && !tag.closest('.user-select__trigger') && !tag.classList.contains('user-tag--nav')) {
     clearTimeout(profileHideTimer);
     if (tag === profileCardTarget) return;
     profileCardTarget = tag;
@@ -769,11 +888,12 @@ document.addEventListener('mousemove', (e) => {
     if (profileCardEl) profileCardEl.remove();
 
     const name = tag.dataset.profileName || '';
+    if (!name) { profileCardTarget = null; return; }
     const avatar = tag.dataset.profileAvatar || '';
     const paypal = tag.dataset.profilePaypal || '';
     const net = tag.dataset.profileNet || '';
     const record = tag.dataset.profileRecord || '';
-    const color = tag.style.background;
+    const color = tag.style.getPropertyValue('--tag-color') || tag.style.background;
 
     profileCardEl = document.createElement('div');
     profileCardEl.className = 'profile-card';
