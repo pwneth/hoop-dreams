@@ -5212,9 +5212,8 @@ h4 {
     display: none;
   }
 
-  .dashboard-layout[data-dash-active="bets"] [data-panel="bets"],
-  .dashboard-layout[data-dash-active="leaderboard"] [data-panel="leaderboard"],
-  .dashboard-layout[data-dash-active="settle"] [data-panel="settle"] {
+  .dashboard-layout[data-dash-active="overview"] [data-panel="overview"],
+  .dashboard-layout[data-dash-active="bets"] [data-panel="bets"] {
     display: block;
   }
 
