@@ -5148,3 +5148,83 @@ h4 {
     font-size: 1.8rem;
   }
 }
+
+/* ============================================
+   MOBILE LAYOUT TIGHTENING
+   ============================================ */
+@media (max-width: 768px) {
+  .main {
+    padding: var(--space-sm);
+    padding-top: 70px;
+  }
+
+  .header__nav-row {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .section__header {
+    margin-bottom: var(--space-sm);
+  }
+
+  .section__title {
+    font-size: 1.2rem;
+  }
+
+  .filters {
+    gap: var(--space-xs);
+    margin-bottom: var(--space-sm);
+  }
+
+  .filters__group {
+    gap: 4px;
+  }
+
+  .filter-btn {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+  }
+
+  .bet-table__toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+  }
+
+  .bet-table__summary {
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.7rem;
+  }
+
+  .bet-table__summary-net {
+    font-size: 0.85rem;
+  }
+
+  .bet-mcard {
+    padding: var(--space-sm);
+  }
+
+  .bet-mcard__side {
+    gap: 2px;
+  }
+
+  .bet-mcard__action {
+    margin-top: var(--space-xs);
+    padding-top: var(--space-xs);
+  }
+
+  .dashboard-layout {
+    gap: var(--space-md);
+  }
+
+  .section {
+    margin-bottom: var(--space-sm);
+  }
+
+  .fab {
+    bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-lg);
+    font-size: 0.85rem;
+  }
+}
