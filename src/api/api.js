@@ -372,6 +372,21 @@ export async function getAllPayPals() {
   return result.success ? { paypals: result.paypals || {}, avatars: result.avatars || {} } : { paypals: {}, avatars: {} };
 }
 
+export async function updateDisplayName(newName) {
+  if (!currentUser) throw new Error('Not authenticated');
+  const result = await apiCall({
+    action: 'updateDisplayName',
+    username: currentUser.username,
+    password: currentUser.password,
+    newName
+  });
+  if (result.success) {
+    currentUser.username = result.newName || newName;
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
+  }
+  return result;
+}
+
 export async function adminSetBracketConfig(config) {
   if (!currentUser) throw new Error('Not authenticated');
 

@@ -41,6 +41,7 @@ const initialState = {
     bracketAdminPendingWinner: null, // { matchupId, winner }
     showBetActionModal: null, // bet id to show actions for
     showSettingsModal: false,
+    showOnboardingModal: false,
     settingsSaving: false,
     userPaypal: '',
     userEmail: '',

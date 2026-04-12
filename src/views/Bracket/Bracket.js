@@ -285,7 +285,7 @@ function getMatchups() {
 // Countdown
 // =============================================
 
-const PICKS_OPEN_DATE = new Date('2026-04-14T06:00:00Z'); // April 14 1am EST = 6am UTC
+const PICKS_OPEN_DATE = new Date('2026-04-13T05:00:00Z'); // April 13 1am EST = 5am UTC
 
 function renderCountdown() {
   const now = new Date();
@@ -324,7 +324,7 @@ function renderCountdown() {
           <span class="bracket-countdown__tag">sec</span>
         </div>
       </div>
-      <div class="bracket-countdown__date">April 14, 2026 at 1:00 AM EST</div>
+      <div class="bracket-countdown__date">April 13, 2026 at 1:00 AM EST</div>
     </div>
   `;
 }

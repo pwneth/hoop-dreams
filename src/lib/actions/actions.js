@@ -142,11 +142,6 @@ export async function handleAuthSubmit(e) {
     const formData = new FormData(e.target);
     let username = formData.get('username') ? formData.get('username').trim() : '';
 
-    // Only capitalize for registration (login accepts email too)
-    if (username && authMode === 'register') {
-        username = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
-    }
-
     const password = formData.get('password');
     const errorEl = document.getElementById('loginError');
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -166,9 +161,11 @@ export async function handleAuthSubmit(e) {
         }
         await Promise.all([refreshData(), loadUserSettings()]);
 
-        // Prompt settings if PayPal is not set
+        // Show onboarding for new users, settings prompt for existing users without PayPal
         const { userPaypal } = getState();
-        if (!userPaypal) {
+        if (authMode === 'register') {
+          setState({ showOnboardingModal: true });
+        } else if (!userPaypal) {
           setState({ showSettingsModal: true });
         }
 
@@ -451,6 +448,30 @@ export async function loadUserSettings() {
     });
   } catch (error) {
     console.error('Failed to load settings:', error);
+  }
+}
+
+export async function handleOnboardingSave(name, paypal, avatar) {
+  try {
+    // Update name if changed
+    const { currentUser } = getState();
+    if (name && name !== currentUser.username) {
+      await api.updateDisplayName(name);
+      setState({ currentUser: { ...currentUser, username: name } });
+    }
+    // Save settings
+    await api.saveUserSettings({ paypal: paypal || '', avatar: avatar || '' });
+    const allData = await api.getAllPayPals();
+    setState({
+      userPaypal: paypal || '',
+      userAvatar: avatar || '',
+      allPaypals: allData.paypals || {},
+      allAvatars: allData.avatars || {},
+      showOnboardingModal: false
+    });
+    await refreshData();
+  } catch (error) {
+    alert('Failed to save: ' + error.message);
   }
 }
 
