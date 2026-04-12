@@ -161,30 +161,43 @@ export function renderMobileNav() {
 
   return `
     <nav class="header__nav mobile-only" id="mainNav">
-      <div class="mobile-nav-header" style="padding: var(--space-lg) var(--space-md); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-md);">
-         ${userAvatar
-           ? `<img src="${userAvatar}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;" />`
-           : `<div style="width: 48px; height: 48px; border-radius: 50%; background: ${color.bg}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem;">${user.username.charAt(0)}</div>`
-         }
-         <div>
-           <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary);">${user.username}</div>
-           <div style="font-size: 0.8rem; color: var(--text-muted);">${user.isAdmin ? 'League Administrator' : 'League Member'}</div>
-         </div>
+      <button class="mobile-nav__close" id="closeNavBtn">&times;</button>
+      <div class="mobile-nav__profile">
+        ${userAvatar
+          ? `<img src="${userAvatar}" class="mobile-nav__avatar" />`
+          : `<div class="mobile-nav__avatar-placeholder" style="background:${color.bg}">${user.username.charAt(0)}</div>`
+        }
+        <div class="mobile-nav__name">${user.username}</div>
+        <div class="mobile-nav__role">${user.isAdmin ? 'League Administrator' : 'League Member'}</div>
       </div>
-      <button class="nav-btn ${currentView === 'dashboard' ? 'active' : ''}" data-path="/">
-        Bets ${badgeHtml}
-      </button>
-      <button class="nav-btn ${currentView === 'bracket' ? 'active' : ''}" data-path="/bracket">
-        Bracket
-      </button>
-
-      <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);">
-         <button class="nav-btn js-settings-btn">&#9881;&#65039; Settings</button>
-         <button class="nav-btn js-change-pw-btn">&#128272; Change Password</button>
-         <button class="nav-btn js-theme-toggle">
-             ${isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-         </button>
-         <button class="nav-btn js-logout-btn" style="color: #ff4757;">&#10140; Log Out</button>
+      <div class="mobile-nav__links">
+        <button class="mobile-nav__link ${currentView === 'dashboard' ? 'mobile-nav__link--active' : ''}" data-path="/">
+          <span class="mobile-nav__link-icon">&#127942;</span>
+          <span>Bets</span>
+          ${badgeHtml}
+        </button>
+        <button class="mobile-nav__link ${currentView === 'bracket' ? 'mobile-nav__link--active' : ''}" data-path="/bracket">
+          <span class="mobile-nav__link-icon">&#127936;</span>
+          <span>Bracket</span>
+        </button>
+      </div>
+      <div class="mobile-nav__divider"></div>
+      <div class="mobile-nav__links">
+        <button class="mobile-nav__link js-settings-btn">
+          <span class="mobile-nav__link-icon">&#9881;&#65039;</span>
+          <span>Settings</span>
+        </button>
+        <button class="mobile-nav__link js-change-pw-btn">
+          <span class="mobile-nav__link-icon">&#128272;</span>
+          <span>Change Password</span>
+        </button>
+        <button class="mobile-nav__link js-theme-toggle">
+          <span class="mobile-nav__link-icon">${isDarkMode ? '☀️' : '🌙'}</span>
+          <span>${isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
+      </div>
+      <div class="mobile-nav__footer">
+        <button class="mobile-nav__logout js-logout-btn">Log Out</button>
       </div>
     </nav>
   `;

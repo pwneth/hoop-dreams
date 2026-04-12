@@ -238,10 +238,18 @@ function attachEventListeners() {
   if (authRegisterBtn) authRegisterBtn.onclick = () => window.setAuthMode('register');
 
   // Navigation
-  document.querySelectorAll('.nav-btn[data-path]').forEach(btn => {
+  document.querySelectorAll('[data-path]').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      e.stopPropagation(); // prevent bubbling issues
-      const path = e.target.closest('.nav-btn').dataset.path;
+      e.stopPropagation();
+      const el = e.target.closest('[data-path]');
+      const path = el.dataset.path;
+      // Close mobile nav if open
+      const nav = document.getElementById('mainNav');
+      if (nav && nav.classList.contains('active')) {
+        nav.classList.remove('active');
+        const hamburger = document.getElementById('hamburgerBtn');
+        if (hamburger) hamburger.innerHTML = '☰';
+      }
       if (path && window.location.pathname !== path) {
         navigateTo(path);
       }
@@ -255,6 +263,13 @@ function attachEventListeners() {
   });
 
   // Mobile Menu
+  function closeMobileNav() {
+    const nav = document.getElementById('mainNav');
+    const btn = document.getElementById('hamburgerBtn');
+    if (nav) nav.classList.remove('active');
+    if (btn) btn.innerHTML = '☰';
+  }
+
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const mainNav = document.getElementById('mainNav');
   const navOverlay = document.getElementById('navOverlay');
@@ -269,6 +284,8 @@ function attachEventListeners() {
     // Use onclick to avoid duplicate listeners on re-render
     hamburgerBtn.onclick = toggleMenu;
     navOverlay.onclick = toggleMenu;
+    const closeNavBtn = document.getElementById('closeNavBtn');
+    if (closeNavBtn) closeNavBtn.onclick = toggleMenu;
   }
 
   // Filters
@@ -319,12 +336,14 @@ function attachEventListeners() {
 
   document.querySelectorAll('.js-change-pw-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      closeMobileNav();
       setState({ showChangePasswordModal: true });
     });
   });
 
   document.querySelectorAll('.js-settings-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      closeMobileNav();
       setState({ showSettingsModal: true });
     });
   });

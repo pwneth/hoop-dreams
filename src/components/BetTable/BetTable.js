@@ -1,4 +1,4 @@
-import { getState, getPendingBets, getPendingActionCount } from '../../lib/store/store.js';
+import { getState, getPendingBets } from '../../lib/store/store.js';
 import { formatCurrency, formatDate, getOtherBetter, getAvatarColor, renderUserTag } from '../../lib/utils/utils.js';
 
 function getAction(bet) {
@@ -309,7 +309,7 @@ export function renderBetTable(betsOverride = null) {
             <span class="bet-mcard__stake${bet.winnerName === bet.better2 ? ' bet-table__winner-text' : ''}">${formatCurrency(bet.better2Reward)}</span>
           </div>
         </div>
-        ${bet.winnerName ? `<div class="bet-mcard__winner">Winner: <strong>${bet.winnerName}</strong></div>` : ''}
+        ${bet.winnerName ? `<div class="bet-mcard__winner">Winner: ${renderUserTag(bet.winnerName, getState())}</div>` : ''}
         ${actionCell ? `<div class="bet-mcard__action">${actionCell}</div>` : ''}
       </div>
     `};
@@ -352,22 +352,22 @@ export function renderBetTable(betsOverride = null) {
     `;
   }
 
-  const pendingCount = getPendingActionCount();
+  const visiblePendingCount = filteredBets.filter(b => pendingBetIds.has(b.id)).length;
   const colCount = showResultCol ? 8 : 7;
-  const actionRowHtml = pendingCount > 0 ? `
+  const actionRowHtml = visiblePendingCount > 0 ? `
     <tr class="action-bar-row">
       <td colspan="${colCount}">
         <div class="action-bar">
           <span class="action-bar__icon">&#9888;&#65039;</span>
-          <span class="action-bar__text">You have <strong>${pendingCount}</strong> pending action${pendingCount > 1 ? 's' : ''} requiring your attention</span>
+          <span class="action-bar__text">You have <strong>${visiblePendingCount}</strong> pending action${visiblePendingCount > 1 ? 's' : ''} requiring your attention</span>
         </div>
       </td>
     </tr>
   ` : '';
-  const actionCardHtml = pendingCount > 0 ? `
+  const actionCardHtml = visiblePendingCount > 0 ? `
     <div class="action-bar">
       <span class="action-bar__icon">&#9888;&#65039;</span>
-      <span class="action-bar__text">You have <strong>${pendingCount}</strong> pending action${pendingCount > 1 ? 's' : ''} requiring your attention</span>
+      <span class="action-bar__text">You have <strong>${visiblePendingCount}</strong> pending action${visiblePendingCount > 1 ? 's' : ''} requiring your attention</span>
     </div>
   ` : '';
 
