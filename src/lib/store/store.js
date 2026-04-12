@@ -5,6 +5,7 @@ const initialState = {
     currentUser: getCurrentUser(),
     authMode: 'login',
     currentView: 'dashboard',
+    dashboardMobileTab: 'overview',
     dataLoaded: false,
     bets: [],
     memberStats: [],

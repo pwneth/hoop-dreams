@@ -2,14 +2,16 @@ import { renderLeaderboard } from '../../components/Leaderboard/Leaderboard.js';
 import { renderDebts } from '../../components/Debts/Debts.js';
 import { renderBetTable } from '../../components/BetTable/BetTable.js';
 import { renderFilters } from '../../components/BetList/BetList.js';
+import { getState } from '../../lib/store/store.js';
 
 export function renderDashboardView() {
+  const tab = getState().dashboardMobileTab || 'overview';
   return `
     <div class="dash-tabs mobile-only">
-      <button class="dash-tabs__btn dash-tabs__btn--active" data-dash-tab="overview">Overview</button>
-      <button class="dash-tabs__btn" data-dash-tab="bets">Bets</button>
+      <button class="dash-tabs__btn ${tab === 'overview' ? 'dash-tabs__btn--active' : ''}" data-dash-tab="overview">Overview</button>
+      <button class="dash-tabs__btn ${tab === 'bets' ? 'dash-tabs__btn--active' : ''}" data-dash-tab="bets">Bets</button>
     </div>
-    <div class="dashboard-layout" data-dash-active="overview">
+    <div class="dashboard-layout" data-dash-active="${tab}">
       <aside class="dashboard-layout__sidebar dashboard-layout__panel" data-panel="overview">
         <section class="section">
           <div class="section__header">

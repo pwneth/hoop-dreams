@@ -499,6 +499,8 @@ if (app) {
     const dashTab = e.target.closest('[data-dash-tab]');
     if (dashTab) {
       const tab = dashTab.dataset.dashTab;
+      // Silent state update — avoid full re-render, just swap DOM
+      getState().dashboardMobileTab = tab;
       document.querySelectorAll('.dash-tabs__btn').forEach(b => b.classList.remove('dash-tabs__btn--active'));
       dashTab.classList.add('dash-tabs__btn--active');
       const layout = document.querySelector('.dashboard-layout');
