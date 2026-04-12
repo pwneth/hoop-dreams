@@ -5,11 +5,12 @@ import { triggerConfetti } from '../confetti/confetti.js';
 import { login, register, changePassword } from '../auth/auth.js';
 
 export async function refreshData() {
+    await api.fetchUsers();
     const bets = await api.fetchBets();
     const memberStats = api.calculateMemberStats(bets);
     const overallStats = api.calculateOverallStats(bets);
 
-    setState({ bets, memberStats, overallStats });
+    setState({ bets, memberStats, overallStats, dataLoaded: true });
 }
 
 export async function handleNewBetSubmit(e) {
@@ -141,7 +142,8 @@ export async function handleAuthSubmit(e) {
     const formData = new FormData(e.target);
     let username = formData.get('username') ? formData.get('username').trim() : '';
 
-    if (username) {
+    // Only capitalize for registration (login accepts email too)
+    if (username && authMode === 'register') {
         username = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
     }
 
@@ -162,10 +164,13 @@ export async function handleAuthSubmit(e) {
         } else {
             await register(username, password);
         }
-        // Auth successful, store updates automatically via auth.js
-        // We might need to trigger init or refresh?
-        // main.js subscription will handle re-render, but data fetch needs to happen.
-        await refreshData();
+        await Promise.all([refreshData(), loadUserSettings()]);
+
+        // Prompt settings if PayPal is not set
+        const { userPaypal } = getState();
+        if (!userPaypal) {
+          setState({ showSettingsModal: true });
+        }
 
         // We can navigate to dashboard implicitly
         // But init logic usually handles data fetch.
@@ -428,6 +433,42 @@ export async function handleSetBracketBuyIn(buyIn) {
   } catch (error) {
     setState({ bracketSaving: false });
     alert('Failed to set buy-in: ' + error.message);
+  }
+}
+
+export async function loadUserSettings() {
+  try {
+    const [settings, allData] = await Promise.all([
+      api.getUserSettings(),
+      api.getAllPayPals()
+    ]);
+    setState({
+      userPaypal: settings.paypal || '',
+      userEmail: settings.email || '',
+      userAvatar: settings.avatar || '',
+      allPaypals: allData.paypals || {},
+      allAvatars: allData.avatars || {}
+    });
+  } catch (error) {
+    console.error('Failed to load settings:', error);
+  }
+}
+
+export async function handleSaveSettings(settings) {
+  try {
+    await api.saveUserSettings(settings);
+    const allData = await api.getAllPayPals();
+    setState({
+      userPaypal: settings.paypal !== undefined ? settings.paypal : getState().userPaypal,
+      userEmail: settings.email !== undefined ? settings.email : getState().userEmail,
+      userAvatar: settings.avatar !== undefined ? settings.avatar : getState().userAvatar,
+      allPaypals: allData.paypals || {},
+      allAvatars: allData.avatars || {},
+      showSettingsModal: false
+    });
+  } catch (error) {
+    alert('Failed to save: ' + error.message);
+    setState({ showSettingsModal: true });
   }
 }
 

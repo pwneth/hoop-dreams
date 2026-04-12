@@ -22,6 +22,7 @@ export function renderFilters() {
         </select>
         ${!isShowingMyBets && currentUser ? `<button class="filter-btn filter-btn--accent js-show-my-bets">My Bets</button>` : ''}
         ${isShowingMyBets ? `<button class="filter-btn filter-btn--accent js-show-all-bets">All Bets</button>` : ''}
+        <button class="filter-btn filter-btn--accent js-export-csv-trigger">&#8599; Export</button>
       </div>
     </div>
   `;

@@ -1,5 +1,5 @@
 import { getState, getPendingBets } from '../../lib/store/store.js';
-import { formatCurrency, formatDate, getOtherBetter, getAvatarColor } from '../../lib/utils/utils.js';
+import { formatCurrency, formatDate, getOtherBetter, getAvatarColor, renderUserTag } from '../../lib/utils/utils.js';
 
 function getAction(bet) {
   const { currentUser } = getState();
@@ -10,42 +10,36 @@ function getAction(bet) {
   if (!canModify || bet.status === 'paid') return null;
 
   const other = currentUser.username === bet.better1 ? bet.better2 : bet.better1;
+  const isWinner = bet.winnerName === currentUser.username;
 
-  // Confirming: if I'm the creator (better1), I'm waiting for opponent
-  if (bet.status === 'confirming') {
-    if (currentUser.username === bet.better1 && !isAdmin) {
-      return { label: '⏳ Waiting', type: 'waiting', tooltip: `Waiting for ${other} to accept the bet` };
-    }
-    return { label: '✓ Verify', type: 'default' };
-  }
-
-  // Winner resolution
+  // No winner yet — anyone can set winner
   if (!bet.winnerLabel) {
-    if (bet.proposerWinner === currentUser.username && !isAdmin) {
-      return { label: '⏳ Waiting', type: 'waiting', tooltip: `Waiting for ${other} to verify the winner` };
-    }
-    if (bet.proposerWinner && bet.proposerWinner !== currentUser.username) {
-      return { label: '✓ Verify Winner', type: 'urgent' };
-    }
     return { label: '🏆 Set Winner', type: 'default' };
   }
 
-  // Payment resolution
+  // Winner set, not paid yet
   if (bet.status !== 'paid') {
+    // Loser claimed they paid — winner needs to confirm receipt
+    if (bet.proposerPaid && bet.proposerPaid !== currentUser.username && isWinner) {
+      return { label: '✓ Confirm Paid', type: 'urgent' };
+    }
+    // Loser claimed they paid — loser is waiting
     if (bet.proposerPaid === currentUser.username && !isAdmin) {
-      return { label: '⏳ Waiting', type: 'waiting', tooltip: `Waiting for ${other} to confirm payment` };
+      return { label: '⏳ Waiting', type: 'waiting', tooltip: `Waiting for ${other} to confirm receipt` };
     }
-    if (bet.proposerPaid && bet.proposerPaid !== currentUser.username) {
-      return { label: '✓ Verify Payment', type: 'urgent' };
+    // Winner can mark as received at any time
+    if (isWinner) {
+      return { label: '✓ Mark Paid', type: 'success' };
     }
-    return { label: '⚠ Payment', type: 'urgent' };
+    // Loser needs to pay
+    return { label: '⚠ Pay', type: 'urgent' };
   }
 
   return null;
 }
 
 export function renderBetActionModal() {
-  const { showBetActionModal, bets, currentUser, confirmingResolution, confirmingPaymentId, confirmingBetId, resolveIsSubmitting, resolveBetId } = getState();
+  const { showBetActionModal, bets, currentUser, confirmingResolution, confirmingPaymentId, resolveIsSubmitting, resolveBetId } = getState();
   if (!showBetActionModal) return '';
 
   const bet = bets.find(b => b.id == showBetActionModal);
@@ -58,63 +52,14 @@ export function renderBetActionModal() {
 
   const isLoading = resolveIsSubmitting && resolveBetId == bet.id;
 
+  const isWinner = bet.winnerName === currentUser.username;
   let content = '';
 
-  // BET CONFIRMATION
-  if (bet.status === 'confirming') {
-    const isOpponent = currentUser.username === bet.better2 || currentUser.isAdmin;
-    if (!isOpponent) {
+  // WINNER RESOLUTION — any participant can set winner directly
+  if (!bet.winnerLabel) {
+    if (confirmingResolution && confirmingResolution.id == bet.id) {
       content = `
-        <p class="bet-modal__info">Waiting for <strong>${bet.better2}</strong> to confirm this bet.</p>
-      `;
-    } else if (confirmingBetId == bet.id) {
-      content = `
-        <p class="bet-modal__info">Accept this bet between <strong>${bet.better1}</strong> and <strong>${bet.better2}</strong>?</p>
-        <div class="bet-modal__actions">
-          <button class="btn btn--primary js-confirm-bet-action" data-id="${bet.id}" data-action="confirm">Accept Bet</button>
-          <button class="btn btn--outline js-confirm-bet-action" data-id="${bet.id}" data-action="decline" style="color:#ff4757;border-color:#ff4757;">Decline Bet</button>
-        </div>
-      `;
-    } else {
-      content = `
-        <p class="bet-modal__info"><strong>${bet.better1}</strong> proposed a bet with <strong>${bet.better2}</strong>.</p>
-        <div class="bet-modal__details">
-          <div class="bet-modal__detail"><span>Bet 1:</span> ${bet.better1Bet}</div>
-          <div class="bet-modal__detail"><span>Bet 2:</span> ${bet.better2Bet}</div>
-          <div class="bet-modal__detail"><span>Stake:</span> ${formatCurrency(bet.better1Reward)} / ${formatCurrency(bet.better2Reward)}</div>
-        </div>
-        <div class="bet-modal__actions">
-          <button class="btn btn--primary js-start-confirm-bet" data-id="${bet.id}">Review & Accept</button>
-        </div>
-      `;
-    }
-  }
-
-  // WINNER RESOLUTION
-  else if (!bet.winnerLabel) {
-    if (bet.proposerWinner) {
-      const proposedWinnerName = bet.proposedWinnerValue === 'better1' ? bet.better1 : bet.better2;
-      if (bet.proposerWinner === currentUser.username) {
-        content = `<p class="bet-modal__info">You proposed <strong>${proposedWinnerName}</strong> as the winner. Waiting for the other party to verify.</p>`;
-      } else if (confirmingResolution && confirmingResolution.id == bet.id) {
-        content = `
-          <p class="bet-modal__info"><strong>${bet.proposerWinner}</strong> says <strong>${proposedWinnerName}</strong> won. Confirm?</p>
-          <div class="bet-modal__actions">
-            <button class="btn btn--primary confirm-resolve-btn">Confirm Winner</button>
-            <button class="btn btn--outline cancel-resolve-btn">Cancel</button>
-          </div>
-        `;
-      } else {
-        content = `
-          <p class="bet-modal__info"><strong>${bet.proposerWinner}</strong> says <strong>${proposedWinnerName}</strong> won.</p>
-          <div class="bet-modal__actions">
-            <button class="btn btn--primary resolve-winner-btn" data-id="${bet.id}" data-winner="${bet.proposedWinnerValue}">Verify Winner</button>
-          </div>
-        `;
-      }
-    } else if (confirmingResolution && confirmingResolution.id == bet.id) {
-      content = `
-        <p class="bet-modal__info">Confirm <strong>${bet[confirmingResolution.winner]}</strong> won this bet?</p>
+        <p class="bet-modal__info">Set <strong>${bet[confirmingResolution.winner]}</strong> as the winner?</p>
         <div class="bet-modal__actions">
           <button class="btn btn--primary confirm-resolve-btn">Confirm</button>
           <button class="btn btn--outline cancel-resolve-btn">Cancel</button>
@@ -135,36 +80,30 @@ export function renderBetActionModal() {
   else if (bet.status !== 'paid') {
     const winnerName = bet.winnerName || 'Winner';
     const loserName = bet.winnerName === bet.better1 ? bet.better2 : bet.better1;
-    if (bet.proposerPaid) {
-      if (bet.proposerPaid === currentUser.username) {
-        content = `<p class="bet-modal__info">You marked this as paid. Waiting for <strong>${getOtherBetter(bet, currentUser).name}</strong> to verify.</p>`;
-      } else if (confirmingPaymentId == bet.id) {
-        content = `
-          <p class="bet-modal__info"><strong>${bet.proposerPaid}</strong> says they paid. Confirm receipt?</p>
-          <div class="bet-modal__actions">
-            <button class="btn btn--primary confirm-payment-btn">Confirm Paid</button>
-            <button class="btn btn--outline cancel-payment-btn">Cancel</button>
-          </div>
-        `;
-      } else {
-        content = `
-          <p class="bet-modal__info"><strong>${bet.proposerPaid}</strong> marked this as paid.</p>
-          <div class="bet-modal__actions">
-            <button class="btn btn--primary resolve-payment-btn" data-id="${bet.id}">Verify Payment</button>
-          </div>
-        `;
-      }
-    } else if (confirmingPaymentId == bet.id) {
+    const oweAmount = formatCurrency(bet.winnerName === bet.better1 ? bet.better1Reward : bet.better2Reward);
+
+    if (bet.proposerPaid && bet.proposerPaid !== currentUser.username && isWinner) {
+      // Loser claimed paid — winner confirms receipt
       content = `
-        <p class="bet-modal__info">Mark this bet as paid?</p>
+        <p class="bet-modal__info"><strong>${bet.proposerPaid}</strong> says they paid ${oweAmount}. Confirm you received it?</p>
         <div class="bet-modal__actions">
-          <button class="btn btn--primary confirm-payment-btn">Confirm Paid</button>
-          <button class="btn btn--outline cancel-payment-btn">Cancel</button>
+          <button class="btn btn--primary resolve-payment-btn" data-id="${bet.id}">Confirm Paid</button>
+        </div>
+      `;
+    } else if (bet.proposerPaid === currentUser.username) {
+      content = `<p class="bet-modal__info">You marked this as paid. Waiting for <strong>${winnerName}</strong> to confirm receipt.</p>`;
+    } else if (isWinner) {
+      // Winner can confirm receipt directly
+      content = `
+        <p class="bet-modal__info"><strong>${loserName}</strong> owes you ${oweAmount}.</p>
+        <div class="bet-modal__actions">
+          <button class="btn btn--primary resolve-payment-btn" data-id="${bet.id}">Mark as Paid</button>
         </div>
       `;
     } else {
+      // Loser marks as paid
       content = `
-        <p class="bet-modal__info"><strong>${winnerName}</strong> won. <strong>${loserName}</strong> owes ${formatCurrency(bet.winnerName === bet.better1 ? bet.better1Reward : bet.better2Reward)}.</p>
+        <p class="bet-modal__info">You owe <strong>${winnerName}</strong> ${oweAmount}.</p>
         <div class="bet-modal__actions">
           <button class="btn btn--primary resolve-payment-btn" data-id="${bet.id}">Mark as Paid</button>
         </div>
@@ -191,6 +130,30 @@ export function renderBetActionModal() {
       </div>
     </div>
   `;
+}
+
+function escapeCSV(val) {
+  const s = String(val || '');
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function generateCSV(bets) {
+  const headers = ['Date', 'Better 1', 'Better 2', 'Bet 1', 'Bet 2', 'Stake 1', 'Stake 2', 'Winner', 'Status'];
+  const rows = bets.map(b => [
+    formatDate(b.date),
+    b.better1,
+    b.better2,
+    b.better1Bet,
+    b.better2Bet,
+    b.better1Reward,
+    b.better2Reward,
+    b.winnerName || '',
+    b.status
+  ].map(escapeCSV).join(','));
+  return [headers.join(','), ...rows].join('\n');
 }
 
 export function renderBetTable(betsOverride = null) {
@@ -231,11 +194,14 @@ export function renderBetTable(betsOverride = null) {
   }
 
   const { currentUser } = getState();
+  const showResultCol = bettorFilter && bettorFilter !== 'all';
+  const resultBettor = showResultCol ? bettorFilter : null;
+
   const rows = filteredBets.map(bet => {
     const statusClass = `bet-table__status--${bet.status}`;
     const statusLabel = bet.status.charAt(0).toUpperCase() + bet.status.slice(1);
     const winnerCol = bet.winnerName
-      ? `<span class="bet-table__tag" style="background:${getAvatarColor(bet.winnerName).bg};color:${getAvatarColor(bet.winnerName).text}">${bet.winnerName}</span>`
+      ? renderUserTag(bet.winnerName, getState())
       : '<span class="bet-table__tbd">—</span>';
     const action = getAction(bet);
     const { resolveIsSubmitting, resolveBetId } = getState();
@@ -246,15 +212,16 @@ export function renderBetTable(betsOverride = null) {
     const needsAction = pendingBetIds.has(bet.id);
     const rowClass = needsAction ? 'bet-table__row--action' : (isMyWin ? 'bet-table__row--won' : (isMyLoss ? 'bet-table__row--lost' : (isParticipant ? 'bet-table__row--mine' : '')));
 
-    const actionCell = isRowLoading ? '<span class="bet-table__row-loading"><span class="bet-table__row-spinner"></span></span>' : (action ? (action.type === 'waiting' ? `<span class="bet-table__waiting" data-tooltip="${action.tooltip}">${action.label}</span>` : `<button class="btn btn--xs btn--outline js-open-bet-action ${action.type === 'urgent' ? 'bet-table__action--urgent' : ''}" data-bet-id="${bet.id}">${action.label}</button>`) : '');
+    const actionTypeClass = action && action.type === 'urgent' ? 'bet-table__action--urgent' : (action && action.type === 'success' ? 'bet-table__action--success' : '');
+    const actionCell = isRowLoading ? '<span class="bet-table__row-loading"><span class="bet-table__row-spinner"></span></span>' : (action ? (action.type === 'waiting' ? `<span class="bet-table__waiting" data-tooltip="${action.tooltip}">${action.label}</span>` : `<button class="btn btn--xs btn--outline js-open-bet-action ${actionTypeClass}" data-bet-id="${bet.id}">${action.label}</button>`) : '');
 
     return { table: `
       <tr class="bet-table__row ${rowClass}" data-needs-action="${needsAction ? '1' : '0'}">
         <td class="bet-table__cell bet-table__cell--date">${formatDate(bet.date)}</td>
         <td class="bet-table__cell bet-table__cell--players">
           <div class="bet-table__stacked">
-            <span class="bet-table__tag" style="background:${getAvatarColor(bet.better1).bg};color:${getAvatarColor(bet.better1).text}">${bet.better1}</span>
-            <span class="bet-table__tag" style="background:${getAvatarColor(bet.better2).bg};color:${getAvatarColor(bet.better2).text}">${bet.better2}</span>
+            ${renderUserTag(bet.better1, getState())}
+            ${renderUserTag(bet.better2, getState())}
           </div>
         </td>
         <td class="bet-table__cell bet-table__cell--bets">
@@ -270,6 +237,14 @@ export function renderBetTable(betsOverride = null) {
           </div>
         </td>
         <td class="bet-table__cell bet-table__cell--winner">${winnerCol}</td>
+        ${showResultCol ? (() => {
+          if (!bet.winnerName) return '<td class="bet-table__cell bet-table__cell--result">—</td>';
+          const won = bet.winnerName === resultBettor;
+          const amount = won
+            ? (resultBettor === bet.better1 ? bet.better1Reward : bet.better2Reward)
+            : (resultBettor === bet.better1 ? bet.better1Reward : bet.better2Reward);
+          return `<td class="bet-table__cell bet-table__cell--result"><span class="${won ? 'bet-table__result--won' : 'bet-table__result--lost'}">${won ? '+' : '-'}${formatCurrency(amount)}</span></td>`;
+        })() : ''}
         <td class="bet-table__cell bet-table__cell--status"><span class="bet-table__status ${statusClass}">${statusLabel}</span></td>
         <td class="bet-table__cell bet-table__cell--actions">${actionCell}</td>
       </tr>
@@ -301,9 +276,39 @@ export function renderBetTable(betsOverride = null) {
   const tableRows = rows.map(r => r.table).join('');
   const cards = rows.map(r => r.card).join('');
 
+  // Calculate summary for filtered bettor
+  let summaryHtml = '';
+  if (showResultCol && resultBettor) {
+    let totalWon = 0, totalLost = 0, wins = 0, losses = 0;
+    filteredBets.forEach(bet => {
+      if (!bet.winnerName) return;
+      const isWin = bet.winnerName === resultBettor;
+      const amount = resultBettor === bet.better1 ? bet.better1Reward : bet.better2Reward;
+      if (isWin) { totalWon += amount; wins++; }
+      else { totalLost += amount; losses++; }
+    });
+    const net = totalWon - totalLost;
+    const netSign = net >= 0 ? '+' : '';
+    const netClass = net >= 0 ? 'bet-table__summary--positive' : 'bet-table__summary--negative';
+    summaryHtml = `
+      <div class="bet-table__summary">
+        <span class="bet-table__summary--positive">+${formatCurrency(totalWon)}</span>
+        <span class="bet-table__summary-label">(${wins}W)</span>
+        <span class="bet-table__summary-sep">-</span>
+        <span class="bet-table__summary--negative">${formatCurrency(totalLost)}</span>
+        <span class="bet-table__summary-label">(${losses}L)</span>
+        <span class="bet-table__summary-sep">=</span>
+        <span class="${netClass} bet-table__summary-net">${netSign}${formatCurrency(net)}</span>
+      </div>
+    `;
+  }
+
   return `
     <div class="bet-table-wrapper">
-      <div class="bet-table__count">${filteredBets.length} bet${filteredBets.length !== 1 ? 's' : ''}</div>
+      <div class="bet-table__toolbar">
+        <span class="bet-table__count">${filteredBets.length} bet${filteredBets.length !== 1 ? 's' : ''}</span>
+        ${summaryHtml}
+      </div>
       <div class="bet-table-scroll desktop-only">
         <table class="bet-table">
           <thead>
@@ -313,6 +318,7 @@ export function renderBetTable(betsOverride = null) {
               <th class="bet-table__th">Bets</th>
               <th class="bet-table__th">Stakes</th>
               <th class="bet-table__th">Winner</th>
+              ${showResultCol ? '<th class="bet-table__th">Result</th>' : ''}
               <th class="bet-table__th">Status</th>
               <th class="bet-table__th">Action</th>
             </tr>

@@ -47,6 +47,22 @@ export function getAvatarColor(name) {
   return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
 }
 
+export function renderUserTag(name, state) {
+  const color = getAvatarColor(name);
+  const avatars = state.allAvatars || {};
+  const paypals = state.allPaypals || {};
+  const memberStats = state.memberStats || [];
+  const avatar = avatars[name] || '';
+  const paypal = paypals[name] || '';
+  const member = memberStats.find(m => m.name === name);
+  const net = member ? (member.netProfit > 0 ? '+' : '') + '€' + Number(member.netProfit).toFixed(2) : '';
+  const record = member ? `${member.wins}W - ${member.losses}L` : '';
+
+  const profileData = `data-profile-name="${name}" data-profile-avatar="${avatar}" data-profile-paypal="${paypal}" data-profile-net="${net}" data-profile-record="${record}"`;
+
+  return `<span class="user-tag" style="background:${color.bg};color:${color.text}" ${profileData}>${avatar ? `<img class="user-tag__avatar" src="${avatar}" />` : `<span class="user-tag__initial">${name.charAt(0)}</span>`}${name}</span>`;
+}
+
 export function getOtherBetter(bet, user) {
     if (!user) return { name: 'Opponent' };
     return bet.better1 === user.username ? { name: bet.better2 } : { name: bet.better1 };

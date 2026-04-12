@@ -1,4 +1,5 @@
 import { renderLeaderboard } from '../../components/Leaderboard/Leaderboard.js';
+import { renderDebts } from '../../components/Debts/Debts.js';
 import { renderBetTable } from '../../components/BetTable/BetTable.js';
 import { renderFilters } from '../../components/BetList/BetList.js';
 
@@ -14,6 +15,12 @@ export function renderDashboardView() {
             <h2 class="section__title">Leaderboard</h2>
           </div>
           ${renderLeaderboard(true)}
+        </section>
+        <section class="section">
+          <div class="section__header">
+            <h2 class="section__title">Settle Up</h2>
+          </div>
+          ${renderDebts()}
         </section>
       </aside>
       <div class="dashboard-layout__main">

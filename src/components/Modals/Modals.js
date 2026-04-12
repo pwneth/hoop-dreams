@@ -1,6 +1,49 @@
 import { getState } from '../../lib/store/store.js';
 import { LEAGUE_MEMBERS } from '../../api/api.js';
 
+export function renderSettingsModal() {
+  const { showSettingsModal, userPaypal, userEmail, userAvatar, settingsSaving } = getState();
+  if (!showSettingsModal) return '';
+
+  return `
+    <div class="modal-overlay" id="settingsModalOverlay">
+      <div class="modal">
+        <div class="modal__header">
+          <h2 class="modal__title">Settings</h2>
+          <button class="modal__close" id="closeSettingsBtn">&times;</button>
+        </div>
+        <div class="modal__form" style="padding: var(--space-lg);">
+          <div class="form-group">
+            <label class="form-label">Profile Picture URL</label>
+            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              <input type="url" class="form-input" id="avatarInput" value="${userAvatar || ''}" placeholder="https://example.com/photo.jpg" style="flex: 1;" />
+              ${userAvatar ? `<img src="${userAvatar}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />` : ''}
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="emailInput" value="${userEmail || ''}" placeholder="your@email.com" />
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">
+              You can use your email to sign in instead of your username.
+            </p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PayPal Username</label>
+            <input type="text" class="form-input" id="paypalInput" value="${userPaypal || ''}" placeholder="e.g. @username or email" />
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">
+              Other members will see a Pay link next to your name when they owe you money.
+            </p>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn--secondary" id="cancelSettingsBtn" ${settingsSaving ? 'disabled' : ''}>Cancel</button>
+            <button type="button" class="btn btn--primary" id="saveSettingsBtn" ${settingsSaving ? 'disabled' : ''}>${settingsSaving ? 'Saving...' : 'Save'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export function renderChangePasswordModal() {
   const { showChangePasswordModal } = getState();
   if (!showChangePasswordModal) return '';

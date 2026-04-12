@@ -10,7 +10,7 @@ import {
 } from './lib/store/store.js';
 import { navigateTo, handleRoute } from './lib/router/router.js';
 import { logout } from './lib/auth/auth.js';
-import { handleNewBetSubmit, handleResolveBet, handleConfirmBet, handleResolvePayment, handleAuthSubmit, handleChangePasswordSubmit, refreshData, stageUserPick, handleSaveAllPicks, stageAdminChange, handleAdminSaveAll, handleSetBracketBuyIn, fetchAndPopulateStandings, refreshBracketData } from './lib/actions/actions.js';
+import { handleNewBetSubmit, handleResolveBet, handleConfirmBet, handleResolvePayment, handleAuthSubmit, handleChangePasswordSubmit, refreshData, stageUserPick, handleSaveAllPicks, stageAdminChange, handleAdminSaveAll, handleSetBracketBuyIn, fetchAndPopulateStandings, refreshBracketData, loadUserSettings, handleSaveSettings } from './lib/actions/actions.js';
 
 // Views
 import { renderDashboardView } from './views/Dashboard/Dashboard.js';
@@ -20,7 +20,7 @@ import { renderBracketView, renderBracketSavingOverlay, renderBracketConfirmModa
 import { renderHeader, renderMobileNav, renderStatsBar } from './components/Header/Header.js';
 import { renderLoginScreen } from './components/Login/Login.js';
 import { renderBetActionModal } from './components/BetTable/BetTable.js';
-import { renderNewBetModal, renderChangePasswordModal } from './components/Modals/Modals.js';
+import { renderNewBetModal, renderChangePasswordModal, renderSettingsModal } from './components/Modals/Modals.js';
 import { renderLoading } from './components/Loader/Loader.js';
 
 const app = document.getElementById('app');
@@ -38,6 +38,22 @@ function render(target = 'all') {
     if (app.innerHTML !== renderLoginScreen()) {
       app.innerHTML = renderLoginScreen();
       attachLoginListeners();
+    }
+    return;
+  }
+
+  // Show loader until data is loaded (except bracket which loads its own data)
+  if (currentUser && !state.dataLoaded && currentView !== 'bracket') {
+    if (target === 'all' || target === 'app') {
+      app.innerHTML = `
+        <div class="nav-overlay" id="navOverlay"></div>
+        ${renderMobileNav()}
+        ${renderHeader()}
+        <main class="main">
+          ${renderLoading()}
+        </main>
+      `;
+      attachEventListeners();
     }
     return;
   }
@@ -126,6 +142,8 @@ function render(target = 'all') {
         }
       } else if (showChangePasswordModal) {
         modalsEl.innerHTML = renderChangePasswordModal();
+      } else if (state.showSettingsModal) {
+        modalsEl.innerHTML = renderSettingsModal();
       } else if (state.showBetActionModal) {
         modalsEl.innerHTML = renderBetActionModal();
       } else {
@@ -264,6 +282,37 @@ function attachEventListeners() {
     });
   });
 
+  document.querySelectorAll('.js-settings-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setState({ showSettingsModal: true });
+    });
+  });
+
+  const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+  const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+  const settingsOverlay = document.getElementById('settingsModalOverlay');
+  const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+  if (closeSettingsBtn) closeSettingsBtn.onclick = () => setState({ showSettingsModal: false });
+  if (cancelSettingsBtn) cancelSettingsBtn.onclick = () => setState({ showSettingsModal: false });
+  if (settingsOverlay) settingsOverlay.onclick = (e) => { if (e.target === settingsOverlay) setState({ showSettingsModal: false }); };
+  if (saveSettingsBtn) saveSettingsBtn.onclick = () => {
+    const paypalInput = document.getElementById('paypalInput');
+    const emailInput = document.getElementById('emailInput');
+    const avatarInput = document.getElementById('avatarInput');
+    // Capture values before any re-render
+    const values = {
+      paypal: paypalInput ? paypalInput.value.trim() : undefined,
+      email: emailInput ? emailInput.value.trim() : undefined,
+      avatar: avatarInput ? avatarInput.value.trim() : undefined
+    };
+    // Disable buttons manually instead of re-rendering
+    saveSettingsBtn.disabled = true;
+    saveSettingsBtn.textContent = 'Saving...';
+    if (cancelSettingsBtn) cancelSettingsBtn.disabled = true;
+    handleSaveSettings(values);
+  };
+
   document.querySelectorAll('.js-theme-toggle').forEach(btn => {
     btn.addEventListener('click', toggleTheme);
   });
@@ -358,6 +407,33 @@ if (app) {
       return;
     }
 
+    // Export CSV
+    const exportBtn = e.target.closest('.js-export-csv') || e.target.closest('.js-export-csv-trigger');
+    if (exportBtn) {
+      const { bets: allBets, statusFilter: sf, bettorFilter: bf } = getState();
+      let filtered = [...allBets];
+      if (sf !== 'all') {
+        if (sf === 'pending') filtered = filtered.filter(b => b.status === 'pending' || b.status === 'confirming');
+        else filtered = filtered.filter(b => b.status === sf);
+      }
+      if (bf !== 'all') filtered = filtered.filter(b => b.better1 === bf || b.better2 === bf);
+      const headers = ['Date','Better 1','Better 2','Bet 1','Bet 2','Stake 1','Stake 2','Winner','Status'];
+      const rows = filtered.map(b => [
+        b.date ? new Date(b.date).toLocaleDateString('en-GB') : '',
+        b.better1, b.better2, b.better1Bet, b.better2Bet,
+        b.better1Reward, b.better2Reward, b.winnerName || '', b.status
+      ].map(v => { const s = String(v||''); return s.includes(',') || s.includes('"') ? '"'+s.replace(/"/g,'""')+'"' : s; }).join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hd-bets.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     // Leaderboard Click
     const leaderboardItem = e.target.closest('.leaderboard__item');
     if (leaderboardItem) {
@@ -405,26 +481,6 @@ if (app) {
 
     if (e.target.closest('.js-cancel-confirm-bet')) {
       setState({ confirmingBetId: null });
-    }
-
-    // Resolve Payment
-    if (e.target.matches('.resolve-payment-btn')) {
-      setState({ confirmingPaymentId: e.target.dataset.id });
-    }
-
-    // Confirm Payment
-    if (e.target.matches('.confirm-payment-btn')) {
-      const { confirmingPaymentId } = getState();
-      if (confirmingPaymentId) {
-        const betId = confirmingPaymentId;
-        setState({ confirmingPaymentId: null });
-        handleResolvePayment(betId);
-      }
-    }
-
-    // Cancel Payment
-    if (e.target.matches('.cancel-payment-btn')) {
-      setState({ confirmingPaymentId: null });
     }
 
     // --- Bracket Events ---
@@ -624,26 +680,11 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  // Resolve payment
+  // Resolve payment — directly call API
   if (e.target.matches('.resolve-payment-btn')) {
-    setState({ confirmingPaymentId: e.target.dataset.id });
-    return;
-  }
-
-  // Confirm payment
-  if (e.target.matches('.confirm-payment-btn')) {
-    const { confirmingPaymentId } = getState();
-    if (confirmingPaymentId) {
-      const betId = confirmingPaymentId;
-      setState({ confirmingPaymentId: null, showBetActionModal: null });
-      handleResolvePayment(betId);
-    }
-    return;
-  }
-
-  // Cancel payment
-  if (e.target.matches('.cancel-payment-btn')) {
-    setState({ confirmingPaymentId: null });
+    const betId = e.target.dataset.id;
+    setState({ showBetActionModal: null });
+    handleResolvePayment(betId);
     return;
   }
 });
@@ -687,20 +728,6 @@ document.addEventListener('click', (e) => {
 });
 
 // ==========================================
-// STATS BAR SCROLL HIDE
-// ==========================================
-
-window.addEventListener('scroll', () => {
-  const bar = document.querySelector('.stats-bar');
-  if (!bar) return;
-  if (window.scrollY > 30) {
-    bar.classList.add('stats-bar--hidden');
-  } else {
-    bar.classList.remove('stats-bar--hidden');
-  }
-});
-
-// ==========================================
 // BRACKET COUNTDOWN TIMER
 // ==========================================
 
@@ -723,6 +750,63 @@ setInterval(() => {
     nums[3].textContent = String(s).padStart(2, '0');
   }
 }, 1000);
+
+// ==========================================
+// PROFILE HOVER CARD
+// ==========================================
+
+let profileCardEl = null;
+let profileCardTarget = null;
+let profileHideTimer = null;
+
+document.addEventListener('mousemove', (e) => {
+  const tag = e.target.closest('.user-tag');
+  if (tag) {
+    clearTimeout(profileHideTimer);
+    if (tag === profileCardTarget) return;
+    profileCardTarget = tag;
+
+    if (profileCardEl) profileCardEl.remove();
+
+    const name = tag.dataset.profileName || '';
+    const avatar = tag.dataset.profileAvatar || '';
+    const paypal = tag.dataset.profilePaypal || '';
+    const net = tag.dataset.profileNet || '';
+    const record = tag.dataset.profileRecord || '';
+    const color = tag.style.background;
+
+    profileCardEl = document.createElement('div');
+    profileCardEl.className = 'profile-card';
+    profileCardEl.innerHTML = `
+      <div class="profile-card__header">
+        ${avatar ? `<img class="profile-card__avatar" src="${avatar}" />` : `<div class="profile-card__initial" style="background:${color}">${name.charAt(0)}</div>`}
+        <div class="profile-card__name">${name}</div>
+      </div>
+      <div class="profile-card__details">
+        ${record ? `<div class="profile-card__detail"><span class="profile-card__detail-icon">&#127942;</span>${record}</div>` : ''}
+        ${paypal ? `<div class="profile-card__detail"><span class="profile-card__detail-icon">&#128179;</span>${paypal}</div>` : ''}
+      </div>
+      ${net ? `<div class="profile-card__net ${net.startsWith('+') ? 'profile-card__net--positive' : 'profile-card__net--negative'}">${net}</div>` : ''}
+    `;
+    document.body.appendChild(profileCardEl);
+
+    const rect = tag.getBoundingClientRect();
+    const cardRect = profileCardEl.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.bottom + 6;
+    if (left + cardRect.width > window.innerWidth - 8) left = window.innerWidth - cardRect.width - 8;
+    if (top + cardRect.height > window.innerHeight - 8) top = rect.top - cardRect.height - 6;
+    profileCardEl.style.left = left + 'px';
+    profileCardEl.style.top = top + 'px';
+  } else if (profileCardTarget) {
+    clearTimeout(profileHideTimer);
+    profileHideTimer = setTimeout(() => {
+      if (profileCardEl) profileCardEl.remove();
+      profileCardEl = null;
+      profileCardTarget = null;
+    }, 100);
+  }
+});
 
 // ==========================================
 // TOOLTIP
@@ -802,7 +886,7 @@ async function init() {
     attachEventListeners();
 
     try {
-      await refreshData();
+      await Promise.all([refreshData(), loadUserSettings()]);
       handleRoute(); // Set initial view
     } catch (error) {
       console.error('Failed to load data:', error);

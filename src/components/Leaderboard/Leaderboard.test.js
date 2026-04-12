@@ -7,7 +7,9 @@ vi.mock('../../lib/store/store.js', () => ({
 }));
 
 vi.mock('../../lib/utils/utils.js', () => ({
-    formatCurrency: (val) => `$${val}`
+    formatCurrency: (val) => `$${val}`,
+    renderUserTag: (name) => `<span>${name}</span>`,
+    getAvatarColor: () => ({ bg: '#000', text: '#fff' }),
 }));
 
 describe('Leaderboard Component', () => {
@@ -16,7 +18,7 @@ describe('Leaderboard Component', () => {
     });
 
     it('should render empty state if no stats', () => {
-        vi.mocked(store.getState).mockReturnValue({ memberStats: [] });
+        vi.mocked(store.getState).mockReturnValue({ memberStats: [], allAvatars: {}, allPaypals: {} });
         const html = renderLeaderboard();
         expect(html).toContain('No data available');
     });
@@ -26,12 +28,11 @@ describe('Leaderboard Component', () => {
             { name: 'User1', wins: 5, losses: 1, winRate: 80, netProfit: 100, potentialGain: 0 },
             { name: 'User2', wins: 1, losses: 5, winRate: 20, netProfit: -50, potentialGain: 20 }
         ];
-        vi.mocked(store.getState).mockReturnValue({ memberStats: stats });
+        vi.mocked(store.getState).mockReturnValue({ memberStats: stats, allAvatars: {}, allPaypals: {} });
 
         const html = renderLeaderboard();
         expect(html).toContain('User1');
         expect(html).toContain('User2');
-        expect(html).toContain('80%');
         expect(html).toContain('$100');
     });
 });

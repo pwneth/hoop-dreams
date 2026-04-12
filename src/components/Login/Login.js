@@ -20,8 +20,8 @@ export function renderLoginScreen() {
 
         <form class="login-form" id="loginForm">
           <div class="form-group">
-            <label class="form-label">First Name</label>
-            <input type="text" class="form-input" name="username" placeholder="Enter your first name" style="text-transform: capitalize;" required autofocus />
+            <label class="form-label">${authMode === 'login' ? 'Name or Email' : 'First Name'}</label>
+            <input type="text" class="form-input" name="username" placeholder="${authMode === 'login' ? 'Enter name or email' : 'Enter your first name'}" style="${authMode === 'register' ? 'text-transform: capitalize;' : ''}" required autofocus />
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>

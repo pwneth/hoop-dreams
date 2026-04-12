@@ -342,6 +342,36 @@ export async function backfillPickedTeams(teamMap) {
   });
 }
 
+export async function getUserSettings() {
+  if (!currentUser) return { paypal: '' };
+  const result = await apiCall({
+    action: 'getUserSettings',
+    username: currentUser.username,
+    password: currentUser.password
+  });
+  return result.success ? result.settings : { paypal: '' };
+}
+
+export async function saveUserSettings(settings) {
+  if (!currentUser) throw new Error('Not authenticated');
+  return await apiCall({
+    action: 'saveUserSettings',
+    username: currentUser.username,
+    password: currentUser.password,
+    ...settings
+  });
+}
+
+export async function getAllPayPals() {
+  if (!currentUser) return { paypals: {}, avatars: {} };
+  const result = await apiCall({
+    action: 'getAllPayPals',
+    username: currentUser.username,
+    password: currentUser.password
+  });
+  return result.success ? { paypals: result.paypals || {}, avatars: result.avatars || {} } : { paypals: {}, avatars: {} };
+}
+
 export async function adminSetBracketConfig(config) {
   if (!currentUser) throw new Error('Not authenticated');
 
@@ -448,6 +478,15 @@ export function parseDate(dateStr) {
 
 export function calculateMemberStats(bets) {
   const stats = {};
+
+  // Seed with all known league members so everyone appears
+  LEAGUE_MEMBERS.forEach(name => {
+    if (name && name !== 'Pot' && !stats[name]) {
+      stats[name] = { name, wins: 0, losses: 0, totalWon: 0, totalLost: 0, activeBets: 0, totalBets: 0, potentialGain: 0 };
+    }
+  });
+
+  // Also add anyone found in bets
   bets.forEach(bet => {
     [bet.better1, bet.better2].forEach(name => {
       if (name && name !== 'Pot' && !stats[name]) {

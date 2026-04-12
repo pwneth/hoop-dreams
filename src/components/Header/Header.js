@@ -19,23 +19,23 @@ function renderMemberStatsBar(member, label) {
       </div>
       <div class="stats-bar__divider"></div>
       <div class="stats-bar__item">
-        <span class="stats-bar__value" style="color: #8cff8c;">${member.wins || 0}</span>
+        <span class="stats-bar__value">${member.wins || 0}</span>
         <span class="stats-bar__label">Won</span>
       </div>
       <div class="stats-bar__divider"></div>
       <div class="stats-bar__item">
-        <span class="stats-bar__value" style="color: #ff8a8a;">${member.losses || 0}</span>
+        <span class="stats-bar__value">${member.losses || 0}</span>
         <span class="stats-bar__label">Lost</span>
       </div>
       <div class="stats-bar__divider stats-bar__hide-mobile"></div>
       <div class="stats-bar__item stats-bar__hide-mobile">
         <span class="stats-bar__value">${formatCurrency(member.potentialGain || 0)}</span>
-        <span class="stats-bar__label">Potential</span>
+        <span class="stats-bar__label">Pending</span>
       </div>
       <div class="stats-bar__divider"></div>
       <div class="stats-bar__item">
-        <span class="stats-bar__value" style="color: ${member.netProfit >= 0 ? '#8cff8c' : '#ff8a8a'};">${profitSign}${formatCurrency(member.netProfit)}</span>
-        <span class="stats-bar__label">Net</span>
+        <span class="stats-bar__value">${profitSign}${formatCurrency(member.netProfit)}</span>
+        <span class="stats-bar__label">${member.netProfit >= 0 ? 'Won' : 'Lost'}</span>
       </div>
     </div>
   `;
@@ -89,7 +89,7 @@ export function renderStatsBar() {
 }
 
 export function renderHeader() {
-  const { currentUser, currentView, isDarkMode } = getState();
+  const { currentUser, currentView, isDarkMode, userAvatar } = getState();
   const user = currentUser || { username: 'Guest' };
   const pendingCount = getPendingActionCount();
   const BASE_URL = import.meta.env.BASE_URL || '/';
@@ -129,7 +129,7 @@ export function renderHeader() {
               <div class="header__user">
                  <div class="user-dropdown" id="userDropdownTrigger">
                    <div class="user-badge" title="Logged in as ${user.username}">
-                     <div class="user-badge__icon">${getInitials(user.username)}</div>
+                     ${userAvatar ? `<img class="user-badge__avatar" src="${userAvatar}" />` : `<div class="user-badge__icon">${getInitials(user.username)}</div>`}
                      <span>${user.username}</span>
                      ${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}
                      <span style="font-size: 0.7em; margin-left: 4px; opacity: 0.5;">▼</span>
@@ -137,6 +137,9 @@ export function renderHeader() {
                    <div class="user-dropdown-menu" id="userDropdownMenu">
                      <button class="user-dropdown-item js-change-pw-btn">
                        <span>🔑</span> Change Password
+                     </button>
+                     <button class="user-dropdown-item js-settings-btn">
+                       <span>&#9881;&#65039;</span> Settings
                      </button>
                      <button class="user-dropdown-item js-theme-toggle">
                        <span>${isDarkMode ? '☀️' : '🌙'}</span> ${isDarkMode ? 'Light Mode' : 'Dark Mode'}
@@ -154,7 +157,6 @@ export function renderHeader() {
         </div>
       </div>
       <div class="nav-overlay" id="navOverlay"></div>
-      ${renderStatsBar()}
       ${renderActionBar()}
     </header>
   `;

@@ -5,6 +5,7 @@ const initialState = {
     currentUser: getCurrentUser(),
     authMode: 'login',
     currentView: 'dashboard',
+    dataLoaded: false,
     bets: [],
     memberStats: [],
     overallStats: {},
@@ -39,6 +40,13 @@ const initialState = {
     bracketAdminChanges: {}, // { [matchupId]: { teamTop, teamBottom, winner, gamesPlayed } }
     bracketAdminPendingWinner: null, // { matchupId, winner }
     showBetActionModal: null, // bet id to show actions for
+    showSettingsModal: false,
+    settingsSaving: false,
+    userPaypal: '',
+    userEmail: '',
+    userAvatar: '',
+    allPaypals: {},
+    allAvatars: {},
     showBracketConfirmModal: false,
     showBracketHowModal: false,
 
@@ -98,17 +106,15 @@ export function getPendingBets() {
     return bets.filter(bet => {
         if (bet.better1 !== currentUser.username && bet.better2 !== currentUser.username) return false;
 
-        if (bet.status === 'confirming') {
-            if (bet.better2 === currentUser.username) return true;
-        }
-
-        const isWaitingForWinner = !bet.winnerLabel && bet.status !== 'confirming';
         const isWaitingForPayment = !!bet.winnerLabel && bet.status !== 'paid';
+        const isWinner = bet.winnerName === currentUser.username;
 
-        if (isWaitingForWinner) {
-            if (bet.proposerWinner && bet.proposerWinner !== currentUser.username) return true;
-        } else if (isWaitingForPayment) {
-            if (bet.proposerPaid && bet.proposerPaid !== currentUser.username) return true;
+        if (isWaitingForPayment) {
+            // Loser claimed paid — winner needs to confirm receipt
+            if (bet.proposerPaid && bet.proposerPaid !== currentUser.username && isWinner) return true;
+            // I lost and haven't marked paid yet
+            const loser = bet.winnerName === bet.better1 ? bet.better2 : bet.better1;
+            if (loser === currentUser.username && !bet.proposerPaid) return true;
         }
         return false;
     });
