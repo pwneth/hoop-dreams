@@ -5150,6 +5150,13 @@ h4 {
 }
 
 /* ============================================
+   DASHBOARD MOBILE TABS
+   ============================================ */
+.dash-tabs {
+  display: none;
+}
+
+/* ============================================
    MOBILE LAYOUT TIGHTENING
    ============================================ */
 @media (max-width: 768px) {
@@ -5160,6 +5167,55 @@ h4 {
 
   .header__nav-row {
     padding: var(--space-sm) var(--space-md);
+  }
+
+  /* Dashboard tabs */
+  .dash-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 3px;
+    margin-bottom: var(--space-sm);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .dash-tabs__btn {
+    flex: 1;
+    padding: var(--space-sm) var(--space-xs);
+    border: none;
+    background: none;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+  }
+
+  .dash-tabs__btn--active {
+    background: var(--accent-primary);
+    color: white;
+  }
+
+  /* Hide all panels, show only active */
+  .dashboard-layout {
+    display: block;
+  }
+
+  .dashboard-layout__sidebar {
+    display: contents;
+  }
+
+  .dashboard-layout__panel {
+    display: none;
+  }
+
+  .dashboard-layout[data-dash-active="bets"] [data-panel="bets"],
+  .dashboard-layout[data-dash-active="leaderboard"] [data-panel="leaderboard"],
+  .dashboard-layout[data-dash-active="settle"] [data-panel="settle"] {
+    display: block;
   }
 
   .section__header {
@@ -5212,10 +5268,6 @@ h4 {
   .bet-mcard__action {
     margin-top: var(--space-xs);
     padding-top: var(--space-xs);
-  }
-
-  .dashboard-layout {
-    gap: var(--space-md);
   }
 
   .section {

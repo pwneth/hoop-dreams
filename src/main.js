@@ -495,6 +495,17 @@ document.addEventListener('click', (e) => {
 // Global Delegated Listeners (attached once)
 if (app) {
   app.onclick = (e) => {
+    // Dashboard mobile tabs
+    const dashTab = e.target.closest('[data-dash-tab]');
+    if (dashTab) {
+      const tab = dashTab.dataset.dashTab;
+      document.querySelectorAll('.dash-tabs__btn').forEach(b => b.classList.remove('dash-tabs__btn--active'));
+      dashTab.classList.add('dash-tabs__btn--active');
+      const layout = document.querySelector('.dashboard-layout');
+      if (layout) layout.dataset.dashActive = tab;
+      return;
+    }
+
     // Open bet action modal
     const openBetAction = e.target.closest('.js-open-bet-action');
     if (openBetAction) {

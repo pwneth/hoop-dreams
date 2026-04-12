@@ -152,17 +152,20 @@ export function renderHeader() {
 }
 
 export function renderMobileNav() {
-  const { currentUser, currentView, isDarkMode } = getState();
+  const { currentUser, currentView, isDarkMode, userAvatar } = getState();
   const user = currentUser || { username: 'Guest' };
   const pendingCount = getPendingActionCount();
-  const BASE_URL = import.meta.env.BASE_URL || '/';
+  const color = getAvatarColor(user.username);
 
   const badgeHtml = pendingCount > 0 ? `<span class="nav-badge">${pendingCount}</span>` : '';
 
   return `
     <nav class="header__nav mobile-only" id="mainNav">
       <div class="mobile-nav-header" style="padding: var(--space-lg) var(--space-md); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-md);">
-         <div class="user-badge__icon" style="width: 48px; height: 48px; font-size: 1.2rem;">${getInitials(user.username)}</div>
+         ${userAvatar
+           ? `<img src="${userAvatar}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;" />`
+           : `<div style="width: 48px; height: 48px; border-radius: 50%; background: ${color.bg}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem;">${user.username.charAt(0)}</div>`
+         }
          <div>
            <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary);">${user.username}</div>
            <div style="font-size: 0.8rem; color: var(--text-muted);">${user.isAdmin ? 'League Administrator' : 'League Member'}</div>
@@ -176,10 +179,12 @@ export function renderMobileNav() {
       </button>
 
       <div style="margin-top: auto; padding-top: var(--space-md); border-top: 1px solid var(--border-subtle);">
-         <button class="nav-btn js-logout-btn" style="color: #ff4757; justify-content: center;">Log Out</button>
-         <button class="nav-btn js-theme-toggle" style="justify-content: center;">
-             ${isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+         <button class="nav-btn js-settings-btn">&#9881;&#65039; Settings</button>
+         <button class="nav-btn js-change-pw-btn">&#128272; Change Password</button>
+         <button class="nav-btn js-theme-toggle">
+             ${isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
          </button>
+         <button class="nav-btn js-logout-btn" style="color: #ff4757;">&#10140; Log Out</button>
       </div>
     </nav>
   `;
