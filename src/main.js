@@ -616,6 +616,30 @@ if (app) {
       setState({ confirmingBetId: null });
     }
 
+    // --- Bracket View Other User ---
+    const viewBracketBtn = e.target.closest('[data-view-bracket]');
+    if (viewBracketBtn) {
+      const username = viewBracketBtn.dataset.viewBracket;
+      setState({ bracketViewingUser: username });
+      return;
+    }
+
+    if (e.target.closest('.js-bracket-view-own')) {
+      setState({ bracketViewingUser: null });
+      return;
+    }
+
+    // Edit picks — load saved picks into staged so they become editable
+    if (e.target.closest('.js-bracket-edit-picks')) {
+      const { bracketPicks } = getState();
+      const staged = {};
+      bracketPicks.forEach(p => {
+        staged[p.matchupId] = { pick: p.pick, games: p.games, pickedTeam: p.pickedTeam };
+      });
+      setState({ bracketStagedPicks: staged, bracketPicks: [] });
+      return;
+    }
+
     // --- Bracket Events ---
 
     // User pick — step 1: select team
@@ -899,6 +923,19 @@ setInterval(() => {
     nums[1].textContent = String(h).padStart(2, '0');
     nums[2].textContent = String(m).padStart(2, '0');
     nums[3].textContent = String(s).padStart(2, '0');
+  }
+
+  // Confirm modal countdown
+  const confirmEl = document.getElementById('confirmCountdown');
+  if (confirmEl) {
+    const ct = new Date(confirmEl.dataset.target);
+    const cd = ct - now;
+    if (cd <= 0) { confirmEl.textContent = 'Picks are now locked!'; return; }
+    const cd_d = Math.floor(cd / (1000 * 60 * 60 * 24));
+    const cd_h = Math.floor((cd / (1000 * 60 * 60)) % 24);
+    const cd_m = Math.floor((cd / (1000 * 60)) % 60);
+    const cd_s = Math.floor((cd / 1000) % 60);
+    confirmEl.textContent = (cd_d > 0 ? cd_d + 'd ' : '') + String(cd_h).padStart(2, '0') + 'h ' + String(cd_m).padStart(2, '0') + 'm ' + String(cd_s).padStart(2, '0') + 's remaining';
   }
 }, 1000);
 

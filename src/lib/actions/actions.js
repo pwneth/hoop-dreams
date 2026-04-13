@@ -263,23 +263,8 @@ function buildExpectedTeamMap(matchups, picks) {
 export async function refreshBracketData() {
   setState({ bracketLoading: true });
   try {
-    const { matchups, picks, scores, buyIn } = await api.fetchBracket();
-    setState({ bracketMatchups: matchups, bracketPicks: picks, bracketScores: scores, bracketBuyIn: buyIn, bracketLoading: false });
-
-    // Backfill pickedTeam for any picks that are missing or incorrect
-    if (picks.length > 0) {
-      const teamMap = buildExpectedTeamMap(matchups, picks);
-      // Check if any picks need updating
-      const needsBackfill = picks.some(p => {
-        const key = p.matchupId + ':' + p.pick;
-        return teamMap[key] && teamMap[key] !== p.pickedTeam;
-      });
-      if (needsBackfill) {
-        await api.backfillPickedTeams(teamMap);
-        const updated = await api.fetchBracket();
-        setState({ bracketMatchups: updated.matchups, bracketPicks: updated.picks, bracketScores: updated.scores, bracketBuyIn: updated.buyIn });
-      }
-    }
+    const { matchups, picks, scores, buyIn, allPicks } = await api.fetchBracket();
+    setState({ bracketMatchups: matchups, bracketPicks: picks, bracketScores: scores, bracketBuyIn: buyIn, bracketAllPicks: allPicks || {}, bracketLoading: false });
   } catch (error) {
     console.error('Failed to load bracket:', error);
     setState({ bracketLoading: false });
@@ -307,8 +292,8 @@ export async function handleSaveAllPicks() {
   setState({ bracketSaving: true });
   try {
     await api.batchSubmitPicks(picks);
-    const { matchups, picks: serverPicks, scores, buyIn } = await api.fetchBracket();
-    setState({ bracketMatchups: matchups, bracketPicks: serverPicks, bracketScores: scores, bracketBuyIn: buyIn, bracketStagedPicks: {}, bracketSaving: false });
+    const { matchups, picks: serverPicks, scores, buyIn, allPicks } = await api.fetchBracket();
+    setState({ bracketMatchups: matchups, bracketPicks: serverPicks, bracketScores: scores, bracketBuyIn: buyIn, bracketAllPicks: allPicks || {}, bracketStagedPicks: {}, bracketSaving: false });
   } catch (error) {
     setState({ bracketSaving: false });
     alert('Failed to save picks: ' + error.message);
@@ -336,8 +321,8 @@ export async function handleAdminSaveAll() {
   setState({ bracketSaving: true });
   try {
     await api.batchUpdateMatchups(updates);
-    const { matchups, picks, scores, buyIn } = await api.fetchBracket();
-    setState({ bracketMatchups: matchups, bracketPicks: picks, bracketScores: scores, bracketBuyIn: buyIn, bracketAdminChanges: {}, bracketSaving: false });
+    const { matchups, picks, scores, buyIn, allPicks } = await api.fetchBracket();
+    setState({ bracketMatchups: matchups, bracketPicks: picks, bracketScores: scores, bracketBuyIn: buyIn, bracketAllPicks: allPicks || {}, bracketAdminChanges: {}, bracketSaving: false });
   } catch (error) {
     setState({ bracketSaving: false });
     alert('Failed to save changes: ' + error.message);

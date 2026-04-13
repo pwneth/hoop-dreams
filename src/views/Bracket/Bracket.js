@@ -24,11 +24,14 @@ export function renderBracketConfirmModal() {
   return `
     <div class="bracket-confirm-overlay">
       <div class="bracket-confirm">
-        <div class="bracket-confirm__icon">&#9888;&#65039;</div>
+        <div class="bracket-confirm__icon">&#127936;</div>
         <h3 class="bracket-confirm__title">Save your picks?</h3>
         <p class="bracket-confirm__text">
-          You're about to save <strong>${count} pick${count > 1 ? 's' : ''}</strong>. Once saved, these picks are <strong>final and cannot be changed</strong>.
+          You're about to save <strong>${count} pick${count > 1 ? 's' : ''}</strong>.
+          You can edit your picks until <strong>Tuesday April 14 at 7:30 PM EST</strong>.
+          After that, all picks are locked — even incomplete brackets.
         </p>
+        <div class="bracket-confirm__countdown" id="confirmCountdown" data-target="${PICKS_LOCK_DATE.toISOString()}"></div>
         <div class="bracket-confirm__actions">
           <button class="btn btn--secondary js-bracket-cancel-save">Go Back</button>
           <button class="btn btn--primary js-bracket-confirm-save">Save Picks</button>
@@ -187,8 +190,18 @@ function applyPickProjections(matchups, picks) {
   return projected;
 }
 
+function getViewingPicks() {
+  const { bracketPicks, bracketAllPicks, bracketViewingUser, currentUser } = getState();
+  if (bracketViewingUser && bracketViewingUser !== (currentUser && currentUser.username)) {
+    return bracketAllPicks[bracketViewingUser] || [];
+  }
+  return bracketPicks;
+}
+
 function getMatchups() {
-  const { bracketMatchups, bracketAdminChanges, bracketPicks, bracketStagedPicks, currentUser } = getState();
+  const { bracketMatchups, bracketAdminChanges, bracketStagedPicks, bracketViewingUser, currentUser } = getState();
+  const bracketPicks = getViewingPicks();
+  const isViewingOther = bracketViewingUser && bracketViewingUser !== (currentUser && currentUser.username);
   let base = bracketMatchups.length > 0 ? bracketMatchups : DEFAULT_BRACKET;
 
   // Merge admin staged changes for preview
@@ -209,7 +222,7 @@ function getMatchups() {
   } else {
     const allUserPicks = [
       ...bracketPicks.map(p => ({ matchupId: p.matchupId, pick: p.pick })),
-      ...Object.entries(bracketStagedPicks).map(([matchupId, v]) => ({ matchupId, pick: v.pick })),
+      ...(isViewingOther ? [] : Object.entries(bracketStagedPicks).map(([matchupId, v]) => ({ matchupId, pick: v.pick }))),
     ];
     const serverPicks = base.filter(m => m.winner).map(m => ({ matchupId: m.matchupId, pick: m.winner }));
 
@@ -353,8 +366,10 @@ export function isPicksOpen() {
 // =============================================
 
 export function renderBracketView() {
-  const { bracketLoading, bracketSaving, bracketConference, bracketScores, bracketBuyIn, bracketPicks, bracketStagedPicks, bracketAdminChanges, currentUser } = getState();
+  const { bracketLoading, bracketSaving, bracketConference, bracketScores, bracketBuyIn, bracketStagedPicks, bracketAdminChanges, bracketViewingUser, currentUser } = getState();
+  const viewingPicks = getViewingPicks();
   const isAdmin = currentUser && currentUser.isAdmin;
+  const isViewingOther = bracketViewingUser && bracketViewingUser !== (currentUser && currentUser.username);
   const hasAdminChanges = Object.keys(bracketAdminChanges).length > 0;
   const hasStagedPicks = Object.keys(bracketStagedPicks).length > 0;
   const matchups = getMatchups();
@@ -368,11 +383,12 @@ export function renderBracketView() {
   const showEast = bracketConference === 'east' || bracketConference === 'all';
 
   const pot = bracketScores.length * bracketBuyIn;
+  const picksLocked = new Date() >= PICKS_LOCK_DATE;
 
   // Count picks across all matchups that have both teams (including projected)
   const pickedIds = new Set([
-    ...bracketPicks.map(p => p.matchupId),
-    ...Object.keys(bracketStagedPicks)
+    ...viewingPicks.map(p => p.matchupId),
+    ...(isViewingOther ? [] : Object.keys(bracketStagedPicks))
   ]);
   const totalMatchups = 21;
   const totalPickedCount = pickedIds.size;
@@ -409,7 +425,7 @@ export function renderBracketView() {
 
       <!-- Countdown or missed picks banner -->
       ${renderCountdown()}
-      ${!isAdmin && currentUser && new Date() >= PICKS_LOCK_DATE && !allPicked ? `
+      ${!isAdmin && currentUser && picksLocked && !allPicked && !isViewingOther ? `
         <div class="bracket-missed">
           <span class="bracket-missed__icon">&#128683;</span>
           <div class="bracket-missed__text">
@@ -424,6 +440,14 @@ export function renderBracketView() {
 
       <!-- Sticky Bottom Bar: Progress + Save -->
       ${new Date() < PICKS_LOCK_DATE || isAdmin ? renderBottomBar(isAdmin, bracketSaving, hasChanges, stagedCount, totalPickedCount, totalMatchups, remainingCount, roundProgress) : ''}
+
+      <!-- Viewing other user's bracket -->
+      ${isViewingOther ? `
+        <div class="bracket-viewing">
+          <span>Viewing <strong>${bracketViewingUser}</strong>'s bracket</span>
+          <button class="btn btn--xs btn--outline js-bracket-view-own">Back to my bracket</button>
+        </div>
+      ` : ''}
 
       <!-- Play-In Tournament -->
       <div class="bracket-playin">
@@ -527,8 +551,19 @@ function renderBottomBar(isAdmin, isSaving, hasChanges, stagedCount, totalPicked
     `;
   }
 
-  // User: hide bar if all picks are saved and nothing staged
-  if (remaining === 0 && !hasChanges) return '';
+  const picksLocked = new Date() >= PICKS_LOCK_DATE;
+  // User: all picks saved, nothing staged
+  if (remaining === 0 && !hasChanges) {
+    if (picksLocked) return '';
+    return `
+      <div class="bracket-bottom-bar">
+        <div class="bracket-bottom-bar__inner">
+          <span class="bracket-bottom-bar__count">All picks submitted</span>
+          <button class="btn btn--secondary bracket-bottom-bar__btn js-bracket-edit-picks">Edit Picks</button>
+        </div>
+      </div>
+    `;
+  }
 
   const pct = totalAvailable > 0 ? Math.round((totalPicked / totalAvailable) * 100) : 0;
 
@@ -550,6 +585,9 @@ function renderBottomBar(isAdmin, isSaving, hasChanges, stagedCount, totalPicked
             <div class="bracket-bottom-bar__bar-fill" style="width: ${pct}%"></div>
           </div>
         </div>
+        ${totalPicked > 0 && !picksLocked ? `
+          <button class="btn btn--secondary bracket-bottom-bar__btn js-bracket-edit-picks">Edit Picks</button>
+        ` : ''}
         ${hasChanges ? `
           <button class="btn btn--primary bracket-bottom-bar__btn js-bracket-save-picks" ${isSaving ? 'disabled' : ''}>
             ${isSaving ? 'Saving...' : 'Save Changes'} (${stagedCount})
@@ -595,7 +633,7 @@ export function renderBracketHowModal() {
             <div class="how-modal__step-num">3</div>
             <div class="how-modal__step-content">
               <strong>Earn points</strong>
-              <span>1 pt per correct winner, +1 bonus for exact games</span>
+              <span>1 pt per play-in winner, 3 pts per series winner, +1 bonus for exact games</span>
             </div>
           </div>
           <div class="how-modal__step">
@@ -622,8 +660,18 @@ export function renderBracketHowModal() {
 function renderScoreboard(scores, buyIn, pot, isAdmin) {
   const rankEmojis = ['&#129351;', '&#129352;', '&#129353;'];
   const state = getState();
+  const allPicks = state.bracketAllPicks || {};
 
-  const displayScores = scores;
+  // If no matchups are completed yet, build placeholder entries from allPicks
+  const displayScores = scores.length > 0 ? scores : Object.keys(allPicks).map(username => ({
+    username,
+    points: 0,
+    correctPicks: 0,
+    correctPlayin: 0,
+    correctSeries: 0,
+    correctGames: 0,
+    totalPicks: allPicks[username].length
+  }));
 
   return `
     <div class="bracket-scoreboard">
@@ -648,22 +696,29 @@ function renderScoreboard(scores, buyIn, pot, isAdmin) {
         </div>
       </div>
       ${displayScores.length > 0 ? `
-        <div class="bracket-scoreboard__list">
+        <div class="bracket-scoreboard__cols">
+          <div class="bracket-scoreboard__col-header">
+            <span></span>
+            <span class="bracket-scoreboard__col-label bracket-scoreboard__col-label--player">Player</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Play-in correct picks (1pt each)">Play-In</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Series correct picks (3pts each)">Series</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Correct # of games predicted (1pt each)">Games</span>
+            <span class="bracket-scoreboard__col-label bracket-scoreboard__col-label--pts">Points</span>
+          </div>
           ${displayScores.map((s, i) => {
             const rank = i + 1;
             const rankHtml = rank <= 3 ? `<span class="bracket-scoreboard__medal">${rankEmojis[i]}</span>` : `<span class="bracket-scoreboard__rank-num">${rank}</span>`;
             return `
-              <div class="bracket-scoreboard__item ${rank === 1 ? 'bracket-scoreboard__item--leader' : ''}">
+              <div class="bracket-scoreboard__item ${rank === 1 ? 'bracket-scoreboard__item--leader' : ''} ${allPicks[s.username] ? 'bracket-scoreboard__item--clickable' : ''}" ${allPicks[s.username] ? `data-view-bracket="${s.username}"` : ''}>
                 <div class="bracket-scoreboard__rank">${rankHtml}</div>
-                <div class="bracket-scoreboard__player">${renderUserTag(s.username, state)}</div>
-                <div class="bracket-scoreboard__score">
-                  <span class="bracket-scoreboard__points">${s.points}<span class="bracket-scoreboard__points-label">pts</span></span>
+                <div class="bracket-scoreboard__player">
+                  ${renderUserTag(s.username, state)}
+                  ${allPicks[s.username] ? `<button class="bracket-scoreboard__view-link" data-view-bracket="${s.username}">View picks</button>` : ''}
                 </div>
-                <div class="bracket-scoreboard__details">
-                  <span class="bracket-scoreboard__detail" data-tooltip="Correct winner picks">${s.correctPicks} picks</span>
-                  <span class="bracket-scoreboard__detail-sep">·</span>
-                  <span class="bracket-scoreboard__detail" data-tooltip="Correct series length">${s.correctGames} games</span>
-                </div>
+                <span class="bracket-scoreboard__col-val">${s.correctPlayin || 0}</span>
+                <span class="bracket-scoreboard__col-val">${s.correctSeries || 0}</span>
+                <span class="bracket-scoreboard__col-val">${s.correctGames || 0}</span>
+                <span class="bracket-scoreboard__col-val bracket-scoreboard__col-val--pts">${s.points}</span>
               </div>
             `;
           }).join('')}
@@ -757,8 +812,10 @@ function renderTeamName(teamName, showTBD = true) {
 function renderMatchupCard(matchup) {
   if (!matchup) return '';
 
-  const { currentUser, bracketPicks, bracketStagedPicks, bracketPendingPick, bracketSaving, bracketAdminChanges } = getState();
+  const { currentUser, bracketStagedPicks, bracketPendingPick, bracketSaving, bracketAdminChanges, bracketViewingUser } = getState();
+  const bracketPicks = getViewingPicks();
   const isAdmin = currentUser && currentUser.isAdmin;
+  const isViewingOther = bracketViewingUser && bracketViewingUser !== (currentUser && currentUser.username);
   const hasTeams = matchup.teamTop && matchup.teamBottom;
   const isCompleted = matchup.winner !== '';
   const isSeries = matchup.round !== 'playin';
@@ -783,7 +840,7 @@ function renderMatchupCard(matchup) {
   const gamesClass = gamesCorrect ? 'bracket-team__games--correct' : (gamesWrong ? 'bracket-team__games--wrong' : '');
 
   const picksLocked = new Date() >= PICKS_LOCK_DATE;
-  const canPick = !isAdmin && hasTeams && !isCompleted && !isSaved && !picksLocked;
+  const canPick = !isAdmin && !isViewingOther && hasTeams && !isCompleted && !isSaved && !picksLocked;
   const pendingTop = isPending && bracketPendingPick.pick === 'top';
   const pendingBottom = isPending && bracketPendingPick.pick === 'bottom';
 

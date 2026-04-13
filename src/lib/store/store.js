@@ -31,6 +31,8 @@ const initialState = {
     // Bracket State
     bracketMatchups: [],
     bracketPicks: [],
+    bracketAllPicks: {}, // { username: [picks] } — all users' picks after lock
+    bracketViewingUser: null, // username to view, null = own picks
     bracketScores: [],
     bracketBuyIn: 0,
     bracketLoading: false,

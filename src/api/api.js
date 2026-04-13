@@ -266,7 +266,7 @@ export async function fetchBracket() {
       picks: result.picks || [],
       scores: result.scores || [],
       buyIn: result.buyIn || 0,
-      locked: result.locked || false
+      allPicks: result.allPicks || {}
     };
   }
   throw new Error(result.error || 'Failed to fetch bracket');
@@ -318,16 +318,6 @@ export async function batchUpdateMatchups(updates) {
     username: currentUser.username,
     password: currentUser.password,
     updates: JSON.stringify(updates)
-  });
-}
-
-export async function lockPicks() {
-  if (!currentUser) throw new Error('Not authenticated');
-
-  return await apiCall({
-    action: 'lockPicks',
-    username: currentUser.username,
-    password: currentUser.password
   });
 }
 
