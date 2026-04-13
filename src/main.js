@@ -412,15 +412,34 @@ function attachEventListeners() {
     newBetForm.onsubmit = handleNewBetSubmit;
   }
 
-  const closePwBtn = document.getElementById('closePwModalBtn');
-  const cancelPwBtn = document.getElementById('cancelPwBtn');
-  const pwOverlay = document.getElementById('pwModalOverlay');
-  const pwForm = document.getElementById('changePwForm');
-
-  if (closePwBtn) closePwBtn.onclick = () => setState({ showChangePasswordModal: false });
-  if (cancelPwBtn) cancelPwBtn.onclick = () => setState({ showChangePasswordModal: false });
-  if (pwOverlay) pwOverlay.onclick = (e) => { if (e.target === pwOverlay) setState({ showChangePasswordModal: false }); };
-  if (pwForm) pwForm.onsubmit = handleChangePasswordSubmit;
+  // Inline change password in settings
+  const inlineChangePwBtn = document.getElementById('inlineChangePwBtn');
+  if (inlineChangePwBtn) {
+    inlineChangePwBtn.onclick = async () => {
+      const oldPw = document.getElementById('inlineOldPw')?.value;
+      const newPw = document.getElementById('inlineNewPw')?.value;
+      const errEl = document.getElementById('inlinePwError');
+      if (!oldPw || !newPw) {
+        if (errEl) { errEl.textContent = 'Please fill in both fields.'; errEl.style.display = 'block'; }
+        return;
+      }
+      inlineChangePwBtn.disabled = true;
+      inlineChangePwBtn.textContent = 'Changing...';
+      try {
+        const { changePassword } = await import('./lib/auth/auth.js');
+        await changePassword(oldPw, newPw);
+        if (errEl) { errEl.style.display = 'none'; }
+        document.getElementById('inlineOldPw').value = '';
+        document.getElementById('inlineNewPw').value = '';
+        inlineChangePwBtn.textContent = 'Password Changed!';
+        setTimeout(() => { inlineChangePwBtn.textContent = 'Change Password'; inlineChangePwBtn.disabled = false; }, 2000);
+      } catch (err) {
+        if (errEl) { errEl.textContent = err.message || 'Failed to change password'; errEl.style.display = 'block'; }
+        inlineChangePwBtn.textContent = 'Change Password';
+        inlineChangePwBtn.disabled = false;
+      }
+    };
+  }
 
   // User Dropdown
   const userDropdownTrigger = document.getElementById('userDropdownTrigger');

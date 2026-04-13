@@ -127,9 +127,6 @@ export function renderHeader() {
                  <div class="user-dropdown" id="userDropdownTrigger">
                    <span class="user-tag user-tag--nav" style="--tag-color:${getAvatarColor(user.username).bg}"><span class="user-tag__icon" ${userAvatar ? `style="background-image:url('${userAvatar}')"` : ''}>${user.username.charAt(0)}</span>${user.username}${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}<span class="user-tag__arrow">▼</span></span>
                    <div class="user-dropdown-menu" id="userDropdownMenu">
-                     <button class="user-dropdown-item js-change-pw-btn">
-                       <span>🔑</span> Change Password
-                     </button>
                      <button class="user-dropdown-item js-settings-btn">
                        <span>&#9881;&#65039;</span> Settings
                      </button>
@@ -182,7 +179,6 @@ export function renderMobileNav() {
         </button>
         ${currentUser ? `
           <button class="mobile-nav__link js-settings-btn">Settings</button>
-          <button class="mobile-nav__link js-change-pw-btn">Change Password</button>
         ` : ''}
         <button class="mobile-nav__link js-theme-toggle">${isDarkMode ? 'Light Mode' : 'Dark Mode'}</button>
         ${currentUser ? `

@@ -7,14 +7,7 @@ vi.mock('../../api/api.js', () => ({ LEAGUE_MEMBERS: ['User1', 'User2'] }));
 
 describe('Modals Component', () => {
     describe('ChangePasswordModal', () => {
-        it('should render if showChangePasswordModal is true', () => {
-            vi.mocked(store.getState).mockReturnValue({ showChangePasswordModal: true });
-            const html = renderChangePasswordModal();
-            expect(html).toContain('Change Password');
-        });
-
-        it('should return empty string if false', () => {
-            vi.mocked(store.getState).mockReturnValue({ showChangePasswordModal: false });
+        it('should return empty string (merged into settings)', () => {
             expect(renderChangePasswordModal()).toBe('');
         });
     });

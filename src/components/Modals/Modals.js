@@ -66,6 +66,24 @@ export function renderSettingsModal() {
         <span class="settings-modal__hint">Others will see a Pay link when they owe you money</span>
       </div>
     </div>
+    <div class="settings-modal__section">
+      <div class="settings-modal__section-header">
+        <span class="settings-modal__section-icon">&#128272;</span>
+        <span class="settings-modal__section-title">Security</span>
+      </div>
+      <div id="changePwInline">
+        <div class="settings-modal__field">
+          <label class="settings-modal__label">Old Password</label>
+          <input type="password" class="form-input" id="inlineOldPw" />
+        </div>
+        <div class="settings-modal__field">
+          <label class="settings-modal__label">New Password</label>
+          <input type="password" class="form-input" id="inlineNewPw" />
+        </div>
+        <div class="error-message" id="inlinePwError" style="display: none; margin-bottom: var(--space-sm);"></div>
+        <button type="button" class="btn btn--secondary btn--sm" id="inlineChangePwBtn">Change Password</button>
+      </div>
+    </div>
     <div class="settings-modal__actions">
       <button type="button" class="btn btn--secondary" id="cancelSettingsBtn" ${settingsSaving ? 'disabled' : ''}>Cancel</button>
       <button type="button" class="btn btn--primary" id="saveSettingsBtn" ${settingsSaving ? 'disabled' : ''}>${settingsSaving ? 'Saving...' : 'Save Changes'}</button>
@@ -105,28 +123,7 @@ export function renderOnboardingModal() {
 }
 
 export function renderChangePasswordModal() {
-  const { showChangePasswordModal } = getState();
-  if (!showChangePasswordModal) return '';
-
-  const body = `
-    <form id="changePwForm" style="padding: var(--space-lg);">
-      <div class="form-group">
-        <label class="form-label">Old Password</label>
-        <input type="password" class="form-input" name="oldPassword" required />
-      </div>
-      <div class="form-group">
-        <label class="form-label">New Password</label>
-        <input type="password" class="form-input" name="newPassword" required />
-      </div>
-      <div class="error-message" id="pwError" style="margin-top: 1rem; display: none;"></div>
-      <div class="form-actions">
-        <button type="button" class="btn btn--secondary" id="cancelPwBtn">Cancel</button>
-        <button type="submit" class="btn btn--primary">Change Password</button>
-      </div>
-    </form>
-  `;
-
-  return modalShell('closePwModalBtn', 'Change Password', body, { overlayId: 'pwModalOverlay' });
+  return '';
 }
 
 export function renderNewBetModal() {
