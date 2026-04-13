@@ -882,13 +882,13 @@ document.addEventListener('click', (e) => {
 // BRACKET COUNTDOWN TIMER
 // ==========================================
 
-const PICKS_OPEN = new Date('2026-04-13T05:00:00Z');
 setInterval(() => {
   const el = document.getElementById('bracketCountdown');
   if (!el) return;
+  const target = new Date(el.dataset.target);
   const now = new Date();
-  if (now >= PICKS_OPEN) { el.closest('.bracket-countdown')?.remove(); return; }
-  const diff = PICKS_OPEN - now;
+  if (now >= target) { el.closest('.bracket-countdown')?.remove(); return; }
+  const diff = target - now;
   const d = Math.floor(diff / (1000 * 60 * 60 * 24));
   const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
   const m = Math.floor((diff / (1000 * 60)) % 60);

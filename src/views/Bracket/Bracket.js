@@ -286,12 +286,27 @@ function getMatchups() {
 // =============================================
 
 const PICKS_OPEN_DATE = new Date('2026-04-13T05:00:00Z'); // April 13 1am EST = 5am UTC
+const PICKS_LOCK_DATE = new Date('2026-04-15T23:00:00Z'); // April 15 7pm EST = 11pm UTC (first play-in game)
 
 function renderCountdown() {
   const now = new Date();
-  if (now >= PICKS_OPEN_DATE) return '';
 
-  const diff = PICKS_OPEN_DATE - now;
+  // Before picks open — count down to open
+  if (now < PICKS_OPEN_DATE) {
+    const diff = PICKS_OPEN_DATE - now;
+    return renderCountdownMarkup(diff, 'Picks open when the regular season ends', 'April 13, 2026 at 1:00 AM EST');
+  }
+
+  // Picks are open — count down to lock
+  if (now < PICKS_LOCK_DATE) {
+    const diff = PICKS_LOCK_DATE - now;
+    return renderCountdownMarkup(diff, 'Make your picks before the Play-In starts!', 'Picks lock April 15, 2026 at 7:00 PM EST');
+  }
+
+  return '';
+}
+
+function renderCountdownMarkup(diff, label, dateText) {
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
   const minutes = Math.floor((diff / (1000 * 60)) % 60);
@@ -300,10 +315,10 @@ function renderCountdown() {
   return `
     <div class="bracket-countdown">
       <div class="bracket-countdown__header">
-        <span class="bracket-countdown__icon">&#127936;</span>
-        <span class="bracket-countdown__label">Picks open when the regular season ends</span>
+        <span class="bracket-countdown__icon">&#9200;</span>
+        <span class="bracket-countdown__label">${label}</span>
       </div>
-      <div class="bracket-countdown__timer" id="bracketCountdown">
+      <div class="bracket-countdown__timer" id="bracketCountdown" data-target="${PICKS_LOCK_DATE.toISOString()}">
         <div class="bracket-countdown__unit">
           <span class="bracket-countdown__num">${days}</span>
           <span class="bracket-countdown__tag">days</span>
@@ -324,7 +339,7 @@ function renderCountdown() {
           <span class="bracket-countdown__tag">sec</span>
         </div>
       </div>
-      <div class="bracket-countdown__date">April 13, 2026 at 1:00 AM EST</div>
+      <div class="bracket-countdown__date">${dateText}</div>
     </div>
   `;
 }
@@ -393,7 +408,7 @@ export function renderBracketView() {
       ` : ''}
 
       <!-- Countdown -->
-      ${!isAdmin ? renderCountdown() : ''}
+      ${renderCountdown()}
 
       <!-- Scoreboard + Buy-In -->
       ${renderScoreboard(bracketScores, bracketBuyIn, pot, isAdmin)}
