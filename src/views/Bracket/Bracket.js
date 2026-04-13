@@ -286,7 +286,7 @@ function getMatchups() {
 // =============================================
 
 const PICKS_OPEN_DATE = new Date('2026-04-13T05:00:00Z'); // April 13 1am EST = 5am UTC
-const PICKS_LOCK_DATE = new Date('2026-04-14T23:30:00Z'); // April 14 7:30pm EST = 11:30pm UTC (first play-in game)
+const PICKS_LOCK_DATE = new Date('2026-04-12T23:30:00Z'); // April 14 7:30pm EST = 11:30pm UTC (first play-in game)
 
 function renderCountdown() {
   const now = new Date();
@@ -407,8 +407,17 @@ export function renderBracketView() {
         </div>
       ` : ''}
 
-      <!-- Countdown -->
+      <!-- Countdown or missed picks banner -->
       ${renderCountdown()}
+      ${!isAdmin && currentUser && new Date() >= PICKS_LOCK_DATE && !allPicked ? `
+        <div class="bracket-missed">
+          <span class="bracket-missed__icon">&#128683;</span>
+          <div class="bracket-missed__text">
+            <strong>You're not participating this year</strong>
+            <span>You didn't complete all your picks before the deadline. You can still follow along!</span>
+          </div>
+        </div>
+      ` : ''}
 
       <!-- Scoreboard + Buy-In -->
       ${renderScoreboard(bracketScores, bracketBuyIn, pot, isAdmin)}

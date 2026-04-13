@@ -4319,6 +4319,47 @@ h4 {
   }
 }
 
+/* --- Missed Picks Banner --- */
+
+.bracket-missed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: rgba(255, 71, 87, 0.08);
+  border: 1px solid rgba(255, 71, 87, 0.2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.bracket-missed__icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.bracket-missed__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bracket-missed__text strong {
+  font-size: 0.95rem;
+  color: #ff4757;
+}
+
+.bracket-missed__text span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .bracket-missed {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
 /* --- Countdown --- */
 
 .bracket-countdown {
