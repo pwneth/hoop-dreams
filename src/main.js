@@ -388,6 +388,13 @@ function attachEventListeners() {
     const newPw = document.getElementById('inlineNewPw')?.value;
     const pwErr = document.getElementById('inlinePwError');
     if (oldPw && newPw) {
+      if (oldPw === newPw) {
+        if (pwErr) { pwErr.textContent = 'New password must be different from old password.'; pwErr.style.display = 'block'; }
+        saveSettingsBtn.disabled = false;
+        saveSettingsBtn.textContent = 'Save Changes';
+        if (cancelSettingsBtn) cancelSettingsBtn.disabled = false;
+        return;
+      }
       try {
         const { changePassword } = await import('./lib/auth/auth.js');
         await changePassword(oldPw, newPw);
@@ -434,14 +441,6 @@ function attachEventListeners() {
 
 
   // User Dropdown
-  const userDropdownTrigger = document.getElementById('userDropdownTrigger');
-  const userDropdownMenu = document.getElementById('userDropdownMenu');
-  if (userDropdownTrigger && userDropdownMenu) {
-    userDropdownTrigger.onclick = (e) => {
-      e.stopPropagation();
-      userDropdownMenu.classList.toggle('active');
-    };
-  }
 
   // Team selector: search filtering + open/close
   document.querySelectorAll('.team-selector__search').forEach(input => {
@@ -924,12 +923,6 @@ document.addEventListener('click', (e) => {
 
 // Global click listener to close dropdowns
 document.addEventListener('click', (e) => {
-  const menu = document.getElementById('userDropdownMenu');
-  const trigger = document.getElementById('userDropdownTrigger');
-
-  if (menu && menu.classList.contains('active') && trigger && !trigger.contains(e.target)) {
-    menu.classList.remove('active');
-  }
 });
 
 // ==========================================

@@ -124,18 +124,14 @@ export function renderHeader() {
             </button>
             ${currentUser ? `
               <div class="header__user">
-                 <div class="user-dropdown" id="userDropdownTrigger">
-                   <span class="user-tag user-tag--nav" style="--tag-color:${getAvatarColor(user.username).bg}"><span class="user-tag__icon" ${userAvatar ? `style="background-image:url('${userAvatar}')"` : ''}>${user.username.charAt(0)}</span>${user.username}${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}<span class="user-tag__arrow">▼</span></span>
-                   <div class="user-dropdown-menu" id="userDropdownMenu">
-                     <button class="user-dropdown-item js-settings-btn">
-                       <span>&#9881;&#65039;</span> Settings
-                     </button>
-                     <button class="user-dropdown-item js-theme-toggle">
-                       <span>${isDarkMode ? '☀️' : '🌙'}</span> ${isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                     </button>
-                     <button class="user-dropdown-item js-logout-btn" style="color: #ff4757;">
-                       <span>➜</span> Logout
-                     </button>
+                 <div class="user-menu" id="userDropdownTrigger">
+                   <div class="user-menu__trigger">
+                     <span class="user-tag user-tag--nav" style="--tag-color:${getAvatarColor(user.username).bg}"><span class="user-tag__icon" ${userAvatar ? `style="background-image:url('${userAvatar}')"` : ''}>${user.username.charAt(0)}</span>${user.username}${user.isAdmin ? '<span class="admin-tag">ADMIN</span>' : ''}<span class="user-tag__arrow">▼</span></span>
+                   </div>
+                   <div class="user-menu__items">
+                     <button class="user-menu__item js-settings-btn">Settings</button>
+                     <button class="user-menu__item js-theme-toggle">${isDarkMode ? 'Light Mode' : 'Dark Mode'}</button>
+                     <button class="user-menu__item user-menu__item--danger js-logout-btn">Logout</button>
                    </div>
                  </div>
               </div>

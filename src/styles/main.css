@@ -2488,67 +2488,74 @@ h4 {
   margin-left: 4px;
 }
 
-.user-dropdown {
+/* User menu — expands from the tag pill */
+.user-menu {
   position: relative;
   cursor: pointer;
 }
 
-.user-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  min-width: 200px;
-  display: none;
+.user-menu__trigger {
+  position: relative;
+  z-index: 2;
+}
+
+.user-menu__items {
+  display: flex;
   flex-direction: column;
-  z-index: 1000;
-  animation: fadeIn 0.15s ease;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  background: var(--bg-card);
+  border: 1px solid transparent;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 100%;
+  z-index: 1;
+  transition: max-height 0.25s ease, opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.user-dropdown:hover .user-dropdown-menu,
-.user-dropdown-menu.active {
-  display: flex;
+.user-menu:hover .user-menu__items {
+  max-height: 200px;
+  opacity: 1;
+  border-color: var(--border-subtle);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
-.user-dropdown-item {
-  padding: var(--space-sm) var(--space-md);
+.user-menu:hover .user-tag--nav {
+  border-radius: var(--radius-full) var(--radius-full) 0 0;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle);
   border-bottom: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  color: var(--text-primary);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background var(--transition-fast);
+}
+
+.user-menu__item {
+  padding: var(--space-sm) var(--space-md);
   background: none;
   border: none;
-  width: 100%;
-  text-align: left;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
   font-size: 0.8rem;
   font-weight: 500;
-  font-family: var(--font-body);
+  cursor: pointer;
+  text-align: left;
   white-space: nowrap;
+  transition: all var(--transition-fast);
 }
 
-.user-dropdown-item:first-child {
-  padding-top: var(--space-sm);
-}
-
-.user-dropdown-item:last-child {
-  padding-bottom: var(--space-sm);
-}
-
-.user-dropdown-item:hover {
+.user-menu__item:hover {
   background: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
-.user-dropdown-item svg {
-  width: 16px;
-  height: 16px;
-  opacity: 0.7;
+.user-menu__item--danger {
+  color: #ff4757;
+}
+
+.user-menu__item--danger:hover {
+  background: rgba(255, 71, 87, 0.06);
 }
 
 .user-tag.user-tag--nav {
