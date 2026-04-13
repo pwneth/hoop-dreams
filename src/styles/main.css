@@ -1133,27 +1133,28 @@ h4 {
     flex-direction: column;
   }
 
-  /* Sticky compact headers */
+  /* Compact headers — just a title strip */
   .new-bet-modal__header,
   .how-modal__header {
     flex-shrink: 0;
-    padding: var(--space-md) var(--space-lg);
+    padding: var(--space-sm) var(--space-lg);
   }
 
   .new-bet-modal__icon,
-  .how-modal__trophy {
-    font-size: 1.5rem;
-    margin-bottom: 0;
+  .how-modal__trophy,
+  .new-bet-modal__subtitle,
+  .how-modal__subtitle {
+    display: none;
   }
 
   .new-bet-modal__title,
   .how-modal__title {
-    font-size: 1.1rem;
+    font-size: 1rem;
+    margin-bottom: 0;
   }
 
-  .new-bet-modal__subtitle,
-  .how-modal__subtitle {
-    font-size: 0.75rem;
+  .settings-modal__avatar-preview {
+    display: none;
   }
 
   /* Scrollable body areas */
