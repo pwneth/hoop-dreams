@@ -92,16 +92,14 @@ function render(target = 'all') {
       break;
     case 'bracket': {
       const { bracketMatchups, bracketLoading } = state;
-      if (currentUser) {
-        const bracketUser = window._bracketLoadedUser;
-        const currentUsername = currentUser.username;
-        if ((!bracketMatchups.length || bracketUser !== currentUsername) && !bracketLoading) {
-          window._bracketLoadedUser = currentUsername;
-          refreshBracketData();
-          if (!localStorage.getItem('hd_bracket_seen')) {
-            localStorage.setItem('hd_bracket_seen', '1');
-            setState({ showBracketHowModal: true });
-          }
+      const bracketUser = window._bracketLoadedUser;
+      const currentUsername = currentUser ? currentUser.username : '_guest';
+      if ((!bracketMatchups.length || bracketUser !== currentUsername) && !bracketLoading) {
+        window._bracketLoadedUser = currentUsername;
+        refreshBracketData();
+        if (currentUser && !localStorage.getItem('hd_bracket_seen')) {
+          localStorage.setItem('hd_bracket_seen', '1');
+          setState({ showBracketHowModal: true });
         }
       }
       mainContent = renderBracketView();

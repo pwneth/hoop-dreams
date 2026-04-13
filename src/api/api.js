@@ -252,7 +252,19 @@ export async function markBetAsPaid(betId) {
 // ----------------------------------------------------------------------
 
 export async function fetchBracket() {
-  if (!currentUser) return { matchups: [], picks: [], scores: [], buyIn: 0 };
+  if (!currentUser) {
+    const result = await apiCall({ action: 'getBracketPublic' });
+    if (result.success) {
+      return {
+        matchups: result.matchups || [],
+        picks: [],
+        scores: result.scores || [],
+        buyIn: result.buyIn || 0,
+        allPicks: {}
+      };
+    }
+    return { matchups: [], picks: [], scores: [], buyIn: 0, allPicks: {} };
+  }
 
   const result = await apiCall({
     action: 'getBracket',

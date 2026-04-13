@@ -366,7 +366,7 @@ export function isPicksOpen() {
 // =============================================
 
 export function renderBracketView() {
-  const { bracketLoading, bracketSaving, bracketConference, bracketScores, bracketBuyIn, bracketStagedPicks, bracketAdminChanges, bracketViewingUser, currentUser } = getState();
+  const { bracketLoading, bracketSaving, bracketScores, bracketBuyIn, bracketStagedPicks, bracketAdminChanges, bracketViewingUser, currentUser } = getState();
   const viewingPicks = getViewingPicks();
   const isAdmin = currentUser && currentUser.isAdmin;
   const isViewingOther = bracketViewingUser && bracketViewingUser !== (currentUser && currentUser.username);
@@ -378,9 +378,6 @@ export function renderBracketView() {
 
   const westPlayin = matchups.filter(m => m.round === 'playin' && m.conference === 'west');
   const eastPlayin = matchups.filter(m => m.round === 'playin' && m.conference === 'east');
-
-  const showWest = bracketConference === 'west' || bracketConference === 'all';
-  const showEast = bracketConference === 'east' || bracketConference === 'all';
 
   const pot = bracketScores.length * bracketBuyIn;
   const picksLocked = new Date() >= PICKS_LOCK_DATE;
@@ -403,13 +400,6 @@ export function renderBracketView() {
 
   return `
     <section class="section bracket-section">
-      <div class="section__header">
-        <h2 class="section__title">NBA Playoff Bracket</h2>
-        <div class="section__header-actions">
-          ${!isAdmin ? `<button class="bracket-how-link js-show-how-it-works">How It Works</button>` : ''}
-          ${isAdmin ? `<button class="btn btn--secondary js-fetch-standings">Fetch Latest Standings</button>` : ''}
-        </div>
-      </div>
 
       <!-- Sign In CTA for non-logged-in users -->
       ${!currentUser ? `
@@ -435,8 +425,17 @@ export function renderBracketView() {
         </div>
       ` : ''}
 
-      <!-- Scoreboard + Buy-In -->
-      ${renderScoreboard(bracketScores, bracketBuyIn, pot, isAdmin)}
+      <!-- Standings Section -->
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">Standings</h2>
+          <div class="section__header-actions">
+            ${!isAdmin ? `<button class="bracket-how-link js-show-how-it-works">How It Works</button>` : ''}
+            ${isAdmin ? `<button class="btn btn--secondary js-fetch-standings">Fetch Latest Standings</button>` : ''}
+          </div>
+        </div>
+        ${renderScoreboard(bracketScores, bracketBuyIn, pot, isAdmin)}
+      </section>
 
       <!-- Sticky Bottom Bar: Progress + Save -->
       ${new Date() < PICKS_LOCK_DATE || isAdmin ? renderBottomBar(isAdmin, bracketSaving, hasChanges, stagedCount, totalPickedCount, totalMatchups, remainingCount, roundProgress) : ''}
@@ -449,58 +448,60 @@ export function renderBracketView() {
         </div>
       ` : ''}
 
-      <!-- Play-In Tournament -->
-      <div class="bracket-playin">
-        <h3 class="bracket-playin__title">Play-In Tournament</h3>
-        <div class="bracket-playin__conferences">
-          <div class="bracket-playin__conf">
-            <h4 class="bracket-playin__conf-title">Western Conference</h4>
-            ${renderPlayInSection(westPlayin, 'west')}
-          </div>
-          <div class="bracket-playin__conf">
-            <h4 class="bracket-playin__conf-title">Eastern Conference</h4>
-            ${renderPlayInSection(eastPlayin, 'east')}
+      <!-- Play-In Section -->
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">Play-In Tournament</h2>
+          <div class="section__header-actions">
+            ${!isAdmin && !isViewingOther && !picksLocked && allPicked && !hasStagedPicks ? `
+              <span class="bracket-edit-bar__text">Picks saved.</span>
+              <button class="bracket-how-link js-bracket-edit-picks">Edit Picks</button>
+            ` : ''}
           </div>
         </div>
-      </div>
-
-      <!-- Main Bracket -->
-      <div class="bracket-playoff-card">
-        <h3 class="bracket-playoff-card__title">NBA Playoffs</h3>
-
-        <!-- Conference Tabs (mobile) -->
-        <div class="bracket-tabs">
-          <button class="bracket-tabs__btn ${bracketConference === 'west' ? 'active' : ''}" data-bracket-conf="west">West</button>
-          <button class="bracket-tabs__btn ${bracketConference === 'east' ? 'active' : ''}" data-bracket-conf="east">East</button>
-          <button class="bracket-tabs__btn ${bracketConference === 'all' ? 'active' : ''}" data-bracket-conf="all">Full</button>
+        <div class="bracket-playin">
+          <div class="playin-line">
+            <div class="playin-line__conf-label">West</div>
+            ${renderPlayInLine(westPlayin, 'west')}
+            <div class="playin-line__divider"></div>
+            <div class="playin-line__conf-label">East</div>
+            ${renderPlayInLine(eastPlayin, 'east')}
+          </div>
         </div>
+      </section>
+
+      <!-- Bracket Section -->
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">Playoff Bracket</h2>
+        </div>
+        <div class="bracket-playoff-card">
 
         <div class="bracket-container">
-        <div class="bracket-tree ${!showWest ? 'bracket-tree--west-hidden' : ''} ${!showEast ? 'bracket-tree--east-hidden' : ''}">
-          ${renderBracketColumn(matchups, 'west', 'r1', showWest)}
-          ${renderBracketColumn(matchups, 'west', 'r2', showWest)}
-          ${renderBracketColumn(matchups, 'west', 'r3', showWest)}
-          ${renderFinalsColumn(matchups)}
-          ${renderBracketColumn(matchups, 'east', 'r3', showEast)}
-          ${renderBracketColumn(matchups, 'east', 'r2', showEast)}
-          ${renderBracketColumn(matchups, 'east', 'r1', showEast)}
-        </div>
+        <div class="bracket-container__inner">
         <!-- Round Labels -->
-        <div class="bracket-labels ${!showWest ? 'bracket-tree--west-hidden' : ''} ${!showEast ? 'bracket-tree--east-hidden' : ''}">
-          ${showWest ? `
-            <div class="bracket-label">Round 1</div>
-            <div class="bracket-label">Semis</div>
-            <div class="bracket-label">West Finals</div>
-          ` : ''}
-          <div class="bracket-label bracket-label--finals">NBA Finals</div>
-          ${showEast ? `
-            <div class="bracket-label">East Finals</div>
-            <div class="bracket-label">Semis</div>
-            <div class="bracket-label">Round 1</div>
-          ` : ''}
+        <div class="bracket-labels">
+          <div class="bracket-label">Round 1 <span class="bracket-label__pts">2pts / pick · 1pt / games</span></div>
+          <div class="bracket-label">Semis <span class="bracket-label__pts">4pts / pick · 2pts / games</span></div>
+          <div class="bracket-label">West Finals <span class="bracket-label__pts">6pts / pick · 3pts / games</span></div>
+          <div class="bracket-label bracket-label--finals">NBA Finals <span class="bracket-label__pts">8pts / pick · 4pts / games</span></div>
+          <div class="bracket-label">East Finals <span class="bracket-label__pts">6pts / pick · 3pts / games</span></div>
+          <div class="bracket-label">Semis <span class="bracket-label__pts">4pts / pick · 2pts / games</span></div>
+          <div class="bracket-label">Round 1 <span class="bracket-label__pts">2pts / pick · 1pt / games</span></div>
+        </div>
+        <div class="bracket-tree">
+          ${renderBracketColumn(matchups, 'west', 'r1', true)}
+          ${renderBracketColumn(matchups, 'west', 'r2', true)}
+          ${renderBracketColumn(matchups, 'west', 'r3', true)}
+          ${renderFinalsColumn(matchups)}
+          ${renderBracketColumn(matchups, 'east', 'r3', true)}
+          ${renderBracketColumn(matchups, 'east', 'r2', true)}
+          ${renderBracketColumn(matchups, 'east', 'r1', true)}
+        </div>
         </div>
         </div>
       </div>
+      </section>
     </section>
   `;
 }
@@ -552,18 +553,8 @@ function renderBottomBar(isAdmin, isSaving, hasChanges, stagedCount, totalPicked
   }
 
   const picksLocked = new Date() >= PICKS_LOCK_DATE;
-  // User: all picks saved, nothing staged
-  if (remaining === 0 && !hasChanges) {
-    if (picksLocked) return '';
-    return `
-      <div class="bracket-bottom-bar">
-        <div class="bracket-bottom-bar__inner">
-          <span class="bracket-bottom-bar__count">All picks submitted</span>
-          <button class="btn btn--secondary bracket-bottom-bar__btn js-bracket-edit-picks">Edit Picks</button>
-        </div>
-      </div>
-    `;
-  }
+  // User: all picks saved, nothing staged — no bottom bar needed
+  if (remaining === 0 && !hasChanges) return '';
 
   const pct = totalAvailable > 0 ? Math.round((totalPicked / totalAvailable) * 100) : 0;
 
@@ -585,9 +576,6 @@ function renderBottomBar(isAdmin, isSaving, hasChanges, stagedCount, totalPicked
             <div class="bracket-bottom-bar__bar-fill" style="width: ${pct}%"></div>
           </div>
         </div>
-        ${totalPicked > 0 && !picksLocked ? `
-          <button class="btn btn--secondary bracket-bottom-bar__btn js-bracket-edit-picks">Edit Picks</button>
-        ` : ''}
         ${hasChanges ? `
           <button class="btn btn--primary bracket-bottom-bar__btn js-bracket-save-picks" ${isSaving ? 'disabled' : ''}>
             ${isSaving ? 'Saving...' : 'Save Changes'} (${stagedCount})
@@ -619,7 +607,7 @@ export function renderBracketHowModal() {
             <div class="how-modal__step-num">1</div>
             <div class="how-modal__step-content">
               <strong>Pick every winner</strong>
-              <span>Play-in, all four rounds, and the Finals</span>
+              <span>Play-In, Round 1, Round 2, Conference Finals, and the Finals</span>
             </div>
           </div>
           <div class="how-modal__step">
@@ -633,19 +621,32 @@ export function renderBracketHowModal() {
             <div class="how-modal__step-num">3</div>
             <div class="how-modal__step-content">
               <strong>Earn points</strong>
-              <span>1 pt per play-in winner, 3 pts per series winner, +1 bonus for exact games</span>
+              <span>More points for later rounds. Bonus for predicting exact games.</span>
+            </div>
+          </div>
+          <div class="how-modal__scoring">
+            <div class="how-modal__scoring-title">Points per round</div>
+            <div class="how-modal__scoring-table">
+              <div class="how-modal__scoring-row how-modal__scoring-row--header">
+                <span>Round</span><span>Winner</span><span>Games</span>
+              </div>
+              <div class="how-modal__scoring-row"><span>Play-In</span><span>1 pt</span><span>—</span></div>
+              <div class="how-modal__scoring-row"><span>Round 1</span><span>2 pts</span><span>1 pt</span></div>
+              <div class="how-modal__scoring-row"><span>Round 2</span><span>4 pts</span><span>2 pts</span></div>
+              <div class="how-modal__scoring-row"><span>Conf Finals</span><span>6 pts</span><span>3 pts</span></div>
+              <div class="how-modal__scoring-row how-modal__scoring-row--finals"><span>Finals</span><span>8 pts</span><span>4 pts</span></div>
             </div>
           </div>
           <div class="how-modal__step">
             <div class="how-modal__step-num">4</div>
             <div class="how-modal__step-content">
-              <strong>Winner takes all</strong>
-              <span>Most points wins the entire pot</span>
+              <strong>Most points wins</strong>
+              <span>The player with the most points at the end takes the pot. In case of a tie, the pot is split evenly.</span>
             </div>
           </div>
         </div>
         <div class="how-modal__warning">
-          Picks are drafts until you <strong>Save</strong>. Once saved, they're <strong>final</strong>.
+          Picks are not editable once the first Play-In game starts.
         </div>
         <button class="btn btn--primary how-modal__btn js-close-how-modal-btn">Let's Go!</button>
       </div>
@@ -676,7 +677,6 @@ function renderScoreboard(scores, buyIn, pot, isAdmin) {
   return `
     <div class="bracket-scoreboard">
       <div class="bracket-scoreboard__header">
-        <h3 class="bracket-scoreboard__title">Standings</h3>
         <div class="bracket-scoreboard__meta">
           <div class="bracket-scoreboard__stat">
             <span class="bracket-scoreboard__stat-label">Pot</span>
@@ -700,10 +700,12 @@ function renderScoreboard(scores, buyIn, pot, isAdmin) {
           <div class="bracket-scoreboard__col-header">
             <span></span>
             <span class="bracket-scoreboard__col-label bracket-scoreboard__col-label--player">Player</span>
-            <span class="bracket-scoreboard__col-label" data-tooltip="Play-in correct picks (1pt each)">Play-In</span>
-            <span class="bracket-scoreboard__col-label" data-tooltip="Series correct picks (3pts each)">Series</span>
-            <span class="bracket-scoreboard__col-label" data-tooltip="Correct # of games predicted (1pt each)">Games</span>
-            <span class="bracket-scoreboard__col-label bracket-scoreboard__col-label--pts">Points</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Points from Play-In (1pt/pick)">PI</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Points from Round 1 (2pt/pick + 1pt/games)">R1</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Points from Conf Semis (4pt/pick + 2pt/games)">R2</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Points from Conf Finals (6pt/pick + 3pt/games)">CF</span>
+            <span class="bracket-scoreboard__col-label" data-tooltip="Points from Finals (8pt/pick + 4pt/games)">F</span>
+            <span class="bracket-scoreboard__col-label bracket-scoreboard__col-label--pts">Total</span>
           </div>
           ${displayScores.map((s, i) => {
             const rank = i + 1;
@@ -715,9 +717,11 @@ function renderScoreboard(scores, buyIn, pot, isAdmin) {
                   ${renderUserTag(s.username, state)}
                   ${allPicks[s.username] ? `<button class="bracket-scoreboard__view-link" data-view-bracket="${s.username}">View picks</button>` : ''}
                 </div>
-                <span class="bracket-scoreboard__col-val">${s.correctPlayin || 0}</span>
-                <span class="bracket-scoreboard__col-val">${s.correctSeries || 0}</span>
-                <span class="bracket-scoreboard__col-val">${s.correctGames || 0}</span>
+                <span class="bracket-scoreboard__col-val">${s.ptsPlayin || 0}</span>
+                <span class="bracket-scoreboard__col-val">${s.ptsR1 || 0}</span>
+                <span class="bracket-scoreboard__col-val">${s.ptsR2 || 0}</span>
+                <span class="bracket-scoreboard__col-val">${s.ptsR3 || 0}</span>
+                <span class="bracket-scoreboard__col-val">${s.ptsFinals || 0}</span>
                 <span class="bracket-scoreboard__col-val bracket-scoreboard__col-val--pts">${s.points}</span>
               </div>
             `;
@@ -732,29 +736,23 @@ function renderScoreboard(scores, buyIn, pot, isAdmin) {
 // Play-In Section
 // =============================================
 
-function renderPlayInSection(playinMatchups, conference) {
+function renderPlayInLine(playinMatchups, conference) {
   const game1 = playinMatchups.find(m => m.matchupId === `${conference}_playin_1`);
   const game2 = playinMatchups.find(m => m.matchupId === `${conference}_playin_2`);
   const game3 = playinMatchups.find(m => m.matchupId === `${conference}_playin_3`);
 
   return `
-    <div class="playin-flow">
-      <div class="playin-flow__row">
-        <div class="playin-flow__game">
-          <div class="playin-flow__label">7 vs 8 — Winner is 7th seed</div>
-          ${renderMatchupCard(game1)}
-        </div>
-        <div class="playin-flow__game">
-          <div class="playin-flow__label">9 vs 10 — Loser eliminated</div>
-          ${renderMatchupCard(game2)}
-        </div>
-      </div>
-      <div class="playin-flow__row playin-flow__row--final">
-        <div class="playin-flow__game">
-          <div class="playin-flow__label">Loser (7/8) vs Winner (9/10) — Winner is 8th seed</div>
-          ${renderMatchupCard(game3)}
-        </div>
-      </div>
+    <div class="playin-line__game">
+      <div class="playin-line__label">7v8 · 7th seed <span class="bracket-label__pts">1pt</span></div>
+      ${renderMatchupCard(game1)}
+    </div>
+    <div class="playin-line__game">
+      <div class="playin-line__label">9v10 · loser out <span class="bracket-label__pts">1pt</span></div>
+      ${renderMatchupCard(game2)}
+    </div>
+    <div class="playin-line__game">
+      <div class="playin-line__label">8th seed <span class="bracket-label__pts">1pt</span></div>
+      ${renderMatchupCard(game3)}
     </div>
   `;
 }

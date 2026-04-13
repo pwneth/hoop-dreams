@@ -116,6 +116,7 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -297,11 +298,10 @@ h4 {
 .main {
   flex: 1;
   padding: var(--space-lg);
-  padding-top: 140px;
+  padding-top: 100px;
   /* Account for fixed header */
   max-width: 1400px;
   margin: 0 auto;
-  width: 100%;
   width: 100%;
 }
 
@@ -3618,70 +3618,68 @@ h4 {
    ============================================ */
 
 .bracket-section {
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-md);
+  overflow: visible;
 }
 
 /* --- Play-In Tournament --- */
 
 .bracket-playin {
-  background: var(--bg-secondary);
-  border: none;
-  border-radius: var(--radius-xl);
-  padding: var(--space-lg);
-  margin-bottom: var(--space-xl);
-  box-shadow: var(--shadow-sm);
+  padding: 0;
+  margin-bottom: 0;
 }
 
 [data-theme="dark"] .bracket-playin {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.bracket-playin__title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--accent-primary);
-  margin-bottom: var(--space-lg);
+.bracket-playin__conf-title {
+  display: none;
   text-align: center;
 }
 
-.bracket-playin__conferences {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-xl);
+.playin-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-sm);
 }
 
-.bracket-playin__conf-title {
-  font-size: 0.85rem;
-  font-weight: 700;
+.playin-line__conf-label {
+  font-size: 0.7rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-md);
-  text-align: center;
+  color: var(--text-muted);
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.playin-flow__row {
-  display: flex;
-  gap: var(--space-md);
-  margin-bottom: var(--space-md);
-  justify-content: center;
+.playin-line__divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border-medium);
+  flex-shrink: 0;
+  margin: 0 var(--space-xs);
 }
 
-.playin-flow__row--final {
-  margin-bottom: 0;
+.playin-line__game {
+  flex-shrink: 0;
+  min-width: 160px;
+  max-width: 180px;
 }
 
-.playin-flow__game {
-  flex: 1;
-  max-width: 220px;
-}
-
-.playin-flow__label {
-  font-size: 0.7rem;
+.playin-line__label {
+  font-size: 0.6rem;
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: var(--space-xs);
   text-align: center;
+  white-space: nowrap;
 }
 
 /* --- Bracket Tabs (mobile) --- */
@@ -3834,12 +3832,11 @@ h4 {
 /* --- Playoff Card --- */
 
 .bracket-playoff-card {
-  background: var(--bg-secondary);
+  background: none;
   border: none;
-  border-radius: var(--radius-xl);
-  padding: var(--space-lg);
+  border-radius: 0;
+  padding: 0;
   margin-bottom: var(--space-xl);
-  box-shadow: var(--shadow-sm);
 }
 
 [data-theme="dark"] .bracket-playoff-card {
@@ -3859,10 +3856,12 @@ h4 {
 .bracket-container {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding: var(--space-xs);
-  padding-bottom: var(--space-md);
-  margin: calc(-1 * var(--space-xs));
   margin-bottom: 0;
+}
+
+.bracket-container__inner {
+  display: inline-block;
+  padding: var(--space-sm);
 }
 
 .bracket-tree {
@@ -3878,7 +3877,7 @@ h4 {
   grid-template-columns: repeat(7, minmax(160px, 1fr));
   gap: var(--space-sm);
   min-width: 1140px;
-  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .bracket-label {
@@ -3888,6 +3887,17 @@ h4 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
+}
+
+.bracket-label__pts {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 1px;
+  white-space: nowrap;
 }
 
 .bracket-label--finals {
@@ -4521,6 +4531,68 @@ h4 {
   color: var(--text-secondary);
 }
 
+.how-modal__scoring {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+}
+
+.how-modal__scoring-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+  text-align: center;
+}
+
+.how-modal__scoring-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.how-modal__scoring-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+}
+
+.how-modal__scoring-row--header {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.how-modal__scoring-row--header span {
+  text-align: center;
+}
+
+.how-modal__scoring-row--header span:first-child {
+  text-align: left;
+}
+
+.how-modal__scoring-row span:nth-child(2),
+.how-modal__scoring-row span:nth-child(3) {
+  text-align: center;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.how-modal__scoring-row--finals {
+  background: rgba(96, 1, 210, 0.06);
+  font-weight: 700;
+}
+
 .how-modal__warning {
   margin: 0 var(--space-lg);
   padding: var(--space-sm) var(--space-md);
@@ -4682,7 +4754,7 @@ h4 {
 
 /* Add bottom padding to bracket section so content isn't hidden behind bar */
 .bracket-section {
-  padding-bottom: 80px;
+  padding-bottom: var(--space-lg);
 }
 
 /* --- Lock Badge & Progress --- */
@@ -4813,7 +4885,7 @@ h4 {
 
 .bracket-scoreboard__col-header {
   display: grid;
-  grid-template-columns: 28px 1fr 55px 55px 55px 60px;
+  grid-template-columns: 28px 1fr 36px 36px 36px 36px 36px 50px;
   gap: var(--space-xs);
   align-items: center;
   padding: var(--space-xs) var(--space-lg);
@@ -4839,7 +4911,7 @@ h4 {
 
 .bracket-scoreboard__item {
   display: grid;
-  grid-template-columns: 28px 1fr 55px 55px 55px 60px;
+  grid-template-columns: 28px 1fr 36px 36px 36px 36px 36px 50px;
   gap: var(--space-xs);
   align-items: center;
   padding: var(--space-sm) var(--space-lg);
@@ -4911,6 +4983,11 @@ h4 {
   display: inline;
 }
 
+.bracket-edit-bar__text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .bracket-viewing {
   display: flex;
   align-items: center;
@@ -4938,7 +5015,7 @@ h4 {
   }
 
   .bracket-scoreboard__col-header {
-    grid-template-columns: 24px 1fr 40px 40px 40px 45px;
+    grid-template-columns: 24px 1fr 28px 28px 28px 28px 28px 38px;
     padding: var(--space-xs) var(--space-md);
   }
 
@@ -4948,7 +5025,7 @@ h4 {
 
 
   .bracket-scoreboard__item {
-    grid-template-columns: 24px 1fr 40px 40px 40px 45px;
+    grid-template-columns: 24px 1fr 28px 28px 28px 28px 28px 38px;
     padding: var(--space-sm) var(--space-md);
   }
 
@@ -5362,18 +5439,35 @@ h4 {
     display: flex;
   }
 
-  .bracket-playin__conferences {
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
+  .playin-line__game {
+    min-width: 140px;
   }
 
-  .playin-flow__row {
+  .bracket-bottom-bar__inner {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
   }
 
-  .playin-flow__game {
-    max-width: 100%;
+  .bracket-bottom-bar__progress-top {
+    gap: 4px;
+  }
+
+  .bracket-bottom-bar__progress-text {
+    font-size: 0.8rem;
+  }
+
+  .bracket-bottom-bar__rounds {
+    gap: 3px;
+  }
+
+  .bracket-progress-round {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  .bracket-bottom-bar__btn {
     width: 100%;
   }
 
@@ -5381,22 +5475,30 @@ h4 {
     max-width: 100%;
   }
 
-  .bracket-tree:not(.bracket-tree--east-hidden):not(.bracket-tree--west-hidden) {
+  .bracket-tree,
+  .bracket-labels {
     grid-template-columns: repeat(7, minmax(140px, 1fr));
     min-width: 1000px;
   }
 
   .bracket-tree.bracket-tree--west-hidden,
-  .bracket-tree.bracket-tree--east-hidden {
-    grid-template-columns: repeat(4, 1fr);
-    min-width: auto;
-  }
-
+  .bracket-tree.bracket-tree--east-hidden,
   .bracket-labels.bracket-tree--west-hidden,
   .bracket-labels.bracket-tree--east-hidden {
-    grid-template-columns: repeat(4, 1fr);
-    min-width: auto;
+    grid-template-columns: repeat(4, minmax(140px, 1fr));
+    min-width: 580px;
   }
+
+  .bracket-col {
+    padding: 0 2px;
+  }
+
+  .bracket-container {
+    margin-left: calc(-1 * var(--space-sm));
+    margin-right: calc(-1 * var(--space-sm));
+    padding: var(--space-sm);
+  }
+
 
   .bracket-tree--west-hidden .bracket-col--west,
   .bracket-tree--east-hidden .bracket-col--east {
@@ -5425,7 +5527,7 @@ h4 {
 @media (max-width: 768px) {
   .main {
     padding: var(--space-sm);
-    padding-top: 70px;
+    padding-top: 80px;
   }
 
   .header__nav-row {
