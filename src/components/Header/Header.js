@@ -162,24 +162,32 @@ export function renderMobileNav() {
   return `
     <nav class="header__nav mobile-only" id="mainNav">
       <button class="mobile-nav__close" id="closeNavBtn">&times;</button>
-      <div class="mobile-nav__profile">
-        ${userAvatar
-          ? `<img src="${userAvatar}" class="mobile-nav__avatar" />`
-          : `<div class="mobile-nav__avatar-placeholder" style="background:${color.bg}">${user.username.charAt(0)}</div>`
-        }
-        <div class="mobile-nav__name">${user.username}</div>
-      </div>
+      ${currentUser ? `
+        <div class="mobile-nav__profile">
+          ${userAvatar
+            ? `<img src="${userAvatar}" class="mobile-nav__avatar" />`
+            : `<div class="mobile-nav__avatar-placeholder" style="background:${color.bg}">${user.username.charAt(0)}</div>`
+          }
+          <div class="mobile-nav__name">${user.username}</div>
+        </div>
+      ` : ''}
       <div class="mobile-nav__links">
-        <button class="mobile-nav__link ${currentView === 'dashboard' ? 'mobile-nav__link--active' : ''}" data-path="/">
-          Bets ${badgeHtml}
-        </button>
+        ${currentUser ? `
+          <button class="mobile-nav__link ${currentView === 'dashboard' ? 'mobile-nav__link--active' : ''}" data-path="/">
+            Bets ${badgeHtml}
+          </button>
+        ` : ''}
         <button class="mobile-nav__link ${currentView === 'bracket' ? 'mobile-nav__link--active' : ''}" data-path="/bracket">
           Bracket
         </button>
-        <button class="mobile-nav__link js-settings-btn">Settings</button>
-        <button class="mobile-nav__link js-change-pw-btn">Change Password</button>
+        ${currentUser ? `
+          <button class="mobile-nav__link js-settings-btn">Settings</button>
+          <button class="mobile-nav__link js-change-pw-btn">Change Password</button>
+        ` : ''}
         <button class="mobile-nav__link js-theme-toggle">${isDarkMode ? 'Light Mode' : 'Dark Mode'}</button>
-        <button class="mobile-nav__link mobile-nav__link--logout js-logout-btn">Log Out</button>
+        ${currentUser ? `
+          <button class="mobile-nav__link mobile-nav__link--logout js-logout-btn">Log Out</button>
+        ` : ''}
       </div>
     </nav>
   `;
