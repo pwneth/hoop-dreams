@@ -1,6 +1,6 @@
 import { getState, setState } from '../../lib/store/store.js';
 import { renderLoading } from '../../components/Loader/Loader.js';
-import { formatCurrency, renderUserTag } from '../../lib/utils/utils.js';
+import { formatCurrency, renderUserTag, getAvatarColor } from '../../lib/utils/utils.js';
 import { NBA_TEAMS, getTeamLogo, getTeamByAbbreviation } from '../../data/nbaTeams.js';
 
 const SAVING_MESSAGES = [
