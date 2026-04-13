@@ -24,6 +24,7 @@ export function renderBracketConfirmModal() {
   return `
     <div class="bracket-confirm-overlay">
       <div class="bracket-confirm">
+        <button class="new-bet-modal__close js-bracket-cancel-save">&times;</button>
         <div class="bracket-confirm__icon">&#127936;</div>
         <h3 class="bracket-confirm__title">Save your picks?</h3>
         <p class="bracket-confirm__text">
