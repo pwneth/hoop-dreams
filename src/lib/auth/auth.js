@@ -15,7 +15,26 @@ export async function register(username, password) {
 
 export function logout() {
     api.logout();
-    setState({ currentUser: null, authMode: 'login' });
+    setState({
+        currentUser: null,
+        authMode: 'login',
+        userPaypal: '',
+        userEmail: '',
+        userAvatar: '',
+        allPaypals: {},
+        allAvatars: {},
+        bracketMatchups: [],
+        bracketPicks: [],
+        bracketAllPicks: {},
+        bracketScores: [],
+        bracketStagedPicks: {},
+        bracketViewingUser: null,
+        memberStats: [],
+        overallStats: {},
+        bets: [],
+        dataLoaded: false,
+    });
+    window._bracketLoadedUser = null;
 }
 
 export async function changePassword(oldPassword, newPassword) {

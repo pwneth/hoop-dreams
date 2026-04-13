@@ -581,6 +581,7 @@ function renderBottomBar(isAdmin, isSaving, hasChanges, stagedCount, totalPicked
           </div>
         </div>
         ${hasChanges ? `
+          <button class="btn btn--secondary bracket-bottom-bar__btn js-bracket-cancel-edit">Cancel</button>
           <button class="btn btn--primary bracket-bottom-bar__btn js-bracket-save-picks" ${isSaving ? 'disabled' : ''}>
             ${isSaving ? 'Saving...' : 'Save Changes'} (${stagedCount})
           </button>

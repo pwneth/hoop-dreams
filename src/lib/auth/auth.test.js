@@ -52,7 +52,7 @@ describe('auth module', () => {
             auth.logout();
 
             expect(api.logout).toHaveBeenCalled();
-            expect(setState).toHaveBeenCalledWith({ currentUser: null, authMode: 'login' });
+            expect(setState).toHaveBeenCalledWith(expect.objectContaining({ currentUser: null, authMode: 'login' }));
         });
     });
 

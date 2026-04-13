@@ -327,6 +327,7 @@ function attachEventListeners() {
 
   document.querySelectorAll('.js-logout-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      closeMobileNav();
       logout();
       navigateTo('/');
     });
@@ -632,7 +633,15 @@ if (app) {
       bracketPicks.forEach(p => {
         staged[p.matchupId] = { pick: p.pick, games: p.games, pickedTeam: p.pickedTeam };
       });
+      window._bracketPicksBackup = bracketPicks;
       setState({ bracketStagedPicks: staged, bracketPicks: [] });
+      return;
+    }
+
+    if (e.target.closest('.js-bracket-cancel-edit')) {
+      const backup = window._bracketPicksBackup || [];
+      setState({ bracketStagedPicks: {}, bracketPicks: backup });
+      window._bracketPicksBackup = null;
       return;
     }
 
