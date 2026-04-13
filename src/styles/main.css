@@ -1177,7 +1177,6 @@ h4 {
 .app-modal__body {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-lg);
 }
 
 @media (max-width: 768px) {
@@ -1527,8 +1526,6 @@ h4 {
 
 .new-bet-modal__form {
   padding: var(--space-lg);
-  overflow-y: auto;
-  max-height: 60vh;
 }
 
 .new-bet-modal__step {
@@ -2086,6 +2083,7 @@ h4 {
   }
 
   .mobile-nav__link .nav-badge {
+    position: static;
     margin-left: var(--space-xs);
   }
 

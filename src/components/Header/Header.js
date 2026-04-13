@@ -168,7 +168,6 @@ export function renderMobileNav() {
           : `<div class="mobile-nav__avatar-placeholder" style="background:${color.bg}">${user.username.charAt(0)}</div>`
         }
         <div class="mobile-nav__name">${user.username}</div>
-        <div class="mobile-nav__role">${user.isAdmin ? 'League Administrator' : 'League Member'}</div>
       </div>
       <div class="mobile-nav__links">
         <button class="mobile-nav__link ${currentView === 'dashboard' ? 'mobile-nav__link--active' : ''}" data-path="/">

@@ -28,6 +28,7 @@ export function renderSettingsModal() {
   const username = currentUser ? currentUser.username : '';
 
   const body = `
+    <div style="padding: var(--space-lg);">
     <div class="settings-modal__section">
       <div class="settings-modal__section-header">
         <span class="settings-modal__section-icon">&#128100;</span>
@@ -69,6 +70,7 @@ export function renderSettingsModal() {
       <button type="button" class="btn btn--secondary" id="cancelSettingsBtn" ${settingsSaving ? 'disabled' : ''}>Cancel</button>
       <button type="button" class="btn btn--primary" id="saveSettingsBtn" ${settingsSaving ? 'disabled' : ''}>${settingsSaving ? 'Saving...' : 'Save Changes'}</button>
     </div>
+    </div>
   `;
 
   return modalShell('closeSettingsBtn', 'Settings', body, { overlayId: 'settingsModalOverlay' });
@@ -79,6 +81,7 @@ export function renderOnboardingModal() {
   if (!showOnboardingModal || !currentUser) return '';
 
   const body = `
+    <div style="padding: var(--space-lg);">
     <div class="login-form__group">
       <label class="login-form__label">Your Display Name</label>
       <input type="text" class="login-form__input" id="onboardName" value="${currentUser.username}" placeholder="Your first name" />
@@ -95,6 +98,7 @@ export function renderOnboardingModal() {
       <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-xs);">You can update all of this later in Settings</p>
     </div>
     <button class="login-form__submit" id="onboardSaveBtn" type="button">Let's Go!</button>
+    </div>
   `;
 
   return modalShell('closeOnboardingBtn', 'Welcome to HD Bets!', body, { overlayId: 'onboardingOverlay' });
@@ -105,7 +109,7 @@ export function renderChangePasswordModal() {
   if (!showChangePasswordModal) return '';
 
   const body = `
-    <form id="changePwForm">
+    <form id="changePwForm" style="padding: var(--space-lg);">
       <div class="form-group">
         <label class="form-label">Old Password</label>
         <input type="password" class="form-input" name="oldPassword" required />
