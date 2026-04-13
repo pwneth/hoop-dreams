@@ -1434,9 +1434,6 @@ h4 {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.settings-modal__section-icon {
-  font-size: 0.85rem;
-}
 
 .settings-modal__section-title {
   font-size: 0.7rem;
@@ -1446,8 +1443,24 @@ h4 {
   color: var(--text-secondary);
 }
 
+.settings-modal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+@media (max-width: 480px) {
+  .settings-modal__row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .settings-modal__field {
-  margin-bottom: var(--space-sm);
+  margin-bottom: 0;
+}
+
+.settings-modal__field .form-input {
+  width: 100%;
 }
 
 .settings-modal__field:last-child {

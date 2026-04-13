@@ -383,6 +383,26 @@ function attachEventListeners() {
         return;
       }
     }
+    // Change password if fields are filled
+    const oldPw = document.getElementById('inlineOldPw')?.value;
+    const newPw = document.getElementById('inlineNewPw')?.value;
+    const pwErr = document.getElementById('inlinePwError');
+    if (oldPw && newPw) {
+      try {
+        const { changePassword } = await import('./lib/auth/auth.js');
+        await changePassword(oldPw, newPw);
+        if (pwErr) pwErr.style.display = 'none';
+        document.getElementById('inlineOldPw').value = '';
+        document.getElementById('inlineNewPw').value = '';
+      } catch (err) {
+        if (pwErr) { pwErr.textContent = err.message || 'Failed to change password'; pwErr.style.display = 'block'; }
+        saveSettingsBtn.disabled = false;
+        saveSettingsBtn.textContent = 'Save Changes';
+        if (cancelSettingsBtn) cancelSettingsBtn.disabled = false;
+        return;
+      }
+    }
+
     handleSaveSettings(values);
   };
 
@@ -412,34 +432,6 @@ function attachEventListeners() {
     newBetForm.onsubmit = handleNewBetSubmit;
   }
 
-  // Inline change password in settings
-  const inlineChangePwBtn = document.getElementById('inlineChangePwBtn');
-  if (inlineChangePwBtn) {
-    inlineChangePwBtn.onclick = async () => {
-      const oldPw = document.getElementById('inlineOldPw')?.value;
-      const newPw = document.getElementById('inlineNewPw')?.value;
-      const errEl = document.getElementById('inlinePwError');
-      if (!oldPw || !newPw) {
-        if (errEl) { errEl.textContent = 'Please fill in both fields.'; errEl.style.display = 'block'; }
-        return;
-      }
-      inlineChangePwBtn.disabled = true;
-      inlineChangePwBtn.textContent = 'Changing...';
-      try {
-        const { changePassword } = await import('./lib/auth/auth.js');
-        await changePassword(oldPw, newPw);
-        if (errEl) { errEl.style.display = 'none'; }
-        document.getElementById('inlineOldPw').value = '';
-        document.getElementById('inlineNewPw').value = '';
-        inlineChangePwBtn.textContent = 'Password Changed!';
-        setTimeout(() => { inlineChangePwBtn.textContent = 'Change Password'; inlineChangePwBtn.disabled = false; }, 2000);
-      } catch (err) {
-        if (errEl) { errEl.textContent = err.message || 'Failed to change password'; errEl.style.display = 'block'; }
-        inlineChangePwBtn.textContent = 'Change Password';
-        inlineChangePwBtn.disabled = false;
-      }
-    };
-  }
 
   // User Dropdown
   const userDropdownTrigger = document.getElementById('userDropdownTrigger');

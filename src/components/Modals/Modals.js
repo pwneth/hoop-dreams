@@ -31,58 +31,49 @@ export function renderSettingsModal() {
     <div style="padding: var(--space-lg);">
     <div class="settings-modal__section">
       <div class="settings-modal__section-header">
-        <span class="settings-modal__section-icon">&#128100;</span>
         <span class="settings-modal__section-title">Profile</span>
       </div>
-      <div class="settings-modal__field">
-        <label class="settings-modal__label">Display Name</label>
-        <input type="text" class="form-input" id="displayNameInput" value="${username}" placeholder="Your name" />
-      </div>
-      <div class="settings-modal__field">
-        <label class="settings-modal__label">Profile Picture URL</label>
-        <input type="url" class="form-input" id="avatarInput" value="${userAvatar || ''}" placeholder="https://example.com/photo.jpg" />
-        <span class="settings-modal__hint">Paste a link to your profile photo</span>
+      <div class="settings-modal__row">
+        <div class="settings-modal__field">
+          <label class="settings-modal__label">Display Name</label>
+          <input type="text" class="form-input" id="displayNameInput" value="${username}" placeholder="Your name" />
+        </div>
+        <div class="settings-modal__field">
+          <label class="settings-modal__label">Profile Picture URL</label>
+          <input type="url" class="form-input" id="avatarInput" value="${userAvatar || ''}" placeholder="https://example.com/photo.jpg" />
+        </div>
       </div>
     </div>
     <div class="settings-modal__section">
       <div class="settings-modal__section-header">
-        <span class="settings-modal__section-icon">&#128231;</span>
         <span class="settings-modal__section-title">Account</span>
       </div>
-      <div class="settings-modal__field">
-        <label class="settings-modal__label">Email</label>
-        <input type="email" class="form-input" id="emailInput" value="${userEmail || ''}" placeholder="your@email.com" />
-        <span class="settings-modal__hint">You can use your email to sign in instead of your username</span>
+      <div class="settings-modal__row">
+        <div class="settings-modal__field">
+          <label class="settings-modal__label">Email</label>
+          <input type="email" class="form-input" id="emailInput" value="${userEmail || ''}" placeholder="your@email.com" />
+        </div>
+        <div class="settings-modal__field">
+          <label class="settings-modal__label">PayPal Username</label>
+          <input type="text" class="form-input" id="paypalInput" value="${userPaypal || ''}" placeholder="e.g. @username or email" />
+        </div>
       </div>
     </div>
     <div class="settings-modal__section">
       <div class="settings-modal__section-header">
-        <span class="settings-modal__section-icon">&#128179;</span>
-        <span class="settings-modal__section-title">Payments</span>
-      </div>
-      <div class="settings-modal__field">
-        <label class="settings-modal__label">PayPal Username</label>
-        <input type="text" class="form-input" id="paypalInput" value="${userPaypal || ''}" placeholder="e.g. @username or email" />
-        <span class="settings-modal__hint">Others will see a Pay link when they owe you money</span>
-      </div>
-    </div>
-    <div class="settings-modal__section">
-      <div class="settings-modal__section-header">
-        <span class="settings-modal__section-icon">&#128272;</span>
         <span class="settings-modal__section-title">Security</span>
       </div>
-      <div id="changePwInline">
+      <div class="settings-modal__row">
         <div class="settings-modal__field">
           <label class="settings-modal__label">Old Password</label>
-          <input type="password" class="form-input" id="inlineOldPw" />
+          <input type="password" class="form-input" id="inlineOldPw" placeholder="Current password" />
         </div>
         <div class="settings-modal__field">
           <label class="settings-modal__label">New Password</label>
-          <input type="password" class="form-input" id="inlineNewPw" />
+          <input type="password" class="form-input" id="inlineNewPw" placeholder="New password" />
         </div>
-        <div class="error-message" id="inlinePwError" style="display: none; margin-bottom: var(--space-sm);"></div>
-        <button type="button" class="btn btn--secondary btn--sm" id="inlineChangePwBtn">Change Password</button>
       </div>
+      <div class="error-message" id="inlinePwError" style="display: none;"></div>
     </div>
     <div class="settings-modal__actions">
       <button type="button" class="btn btn--secondary" id="cancelSettingsBtn" ${settingsSaving ? 'disabled' : ''}>Cancel</button>
