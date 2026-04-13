@@ -444,23 +444,47 @@ export function renderBracketView() {
       <!-- Sticky Bottom Bar: Progress + Save -->
       ${currentUser && (new Date() < PICKS_LOCK_DATE || isAdmin) ? renderBottomBar(isAdmin, bracketSaving, hasChanges, stagedCount, totalPickedCount, totalMatchups, remainingCount, roundProgress) : ''}
 
-      <!-- Viewing other user's bracket -->
-      ${isViewingOther ? `
-        <div class="bracket-viewing">
-          <span>Viewing <strong>${bracketViewingUser}</strong>'s bracket</span>
-          <button class="btn btn--xs btn--outline js-bracket-view-own">Back to my bracket</button>
-        </div>
-      ` : ''}
-
       <!-- Play-In Section -->
       <section class="section">
         <div class="section__header">
           <h2 class="section__title">Play-In Tournament</h2>
           <div class="section__header-actions">
-            ${!isAdmin && !isViewingOther && !picksLocked && allPicked && !hasStagedPicks ? `
-              <span class="bracket-edit-bar__text">Picks saved.</span>
-              <button class="bracket-how-link js-bracket-edit-picks">Edit Picks</button>
-            ` : ''}
+            ${currentUser && !isAdmin ? (() => {
+              const state = getState();
+              const allPks = state.bracketAllPicks || {};
+              const viewableUsers = Object.keys(allPks).sort();
+              const viewingName = bracketViewingUser || currentUser.username;
+              const isOwnBracket = !bracketViewingUser || bracketViewingUser === currentUser.username;
+
+              // User selector dropdown
+              const dropdownHtml = viewableUsers.length > 0 ? `
+                <div class="user-select bracket-user-select" id="bracketUserSelect">
+                  <div class="user-select__trigger" id="bracketUserTrigger">
+                    <span class="bracket-viewing-text">Viewing <strong>${viewingName}</strong></span>
+                    <span class="user-select__arrow"></span>
+                  </div>
+                  <div class="user-select__dropdown">
+                    <div class="user-select__option js-bracket-user-option" data-value="${currentUser.username}">
+                      <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); padding: 2px 8px;">My Bracket</span>
+                    </div>
+                    ${viewableUsers.filter(u => u !== currentUser.username).map(u => {
+                      const color = getAvatarColor(u);
+                      const avatar = (state.allAvatars || {})[u] || '';
+                      return `<div class="user-select__option js-bracket-user-option" data-value="${u}">
+                        <span class="user-tag" style="--tag-color:${color.bg}"><span class="user-tag__icon" ${avatar ? `style="background-image:url('${avatar}')"` : ''}>${u.charAt(0)}</span>${u}</span>
+                      </div>`;
+                    }).join('')}
+                  </div>
+                </div>
+              ` : `<span class="bracket-viewing-text">Viewing <strong>${viewingName}</strong></span>`;
+
+              // Edit link (only for own bracket, when all picks saved, before deadline)
+              const editHtml = isOwnBracket && !picksLocked && allPicked && !hasStagedPicks
+                ? `<button class="bracket-how-link js-bracket-edit-picks">Edit Picks</button>`
+                : '';
+
+              return dropdownHtml + editHtml;
+            })() : ''}
           </div>
         </div>
         <div class="bracket-playin">

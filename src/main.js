@@ -626,6 +626,16 @@ if (app) {
       return;
     }
 
+    const bracketUserOption = e.target.closest('.js-bracket-user-option');
+    if (bracketUserOption) {
+      const username = bracketUserOption.dataset.value;
+      const { currentUser } = getState();
+      setState({ bracketViewingUser: username === (currentUser && currentUser.username) ? null : username });
+      const select = bracketUserOption.closest('.user-select');
+      if (select) select.classList.remove('user-select--open');
+      return;
+    }
+
     // Edit picks — load saved picks into staged so they become editable
     if (e.target.closest('.js-bracket-edit-picks')) {
       const { bracketPicks } = getState();

@@ -5035,24 +5035,19 @@ h4 {
   display: inline;
 }
 
-.bracket-edit-bar__text {
+.bracket-viewing-text {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
-.bracket-viewing {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--bg-card);
-  border: 1px solid var(--accent-primary);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-lg);
-  font-size: 0.85rem;
+.bracket-viewing-text strong {
   color: var(--text-primary);
 }
+
+.bracket-user-select {
+  display: inline-block;
+}
+
 
 .bracket-scoreboard__empty {
   text-align: center;
