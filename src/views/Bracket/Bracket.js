@@ -286,7 +286,7 @@ function getMatchups() {
 // =============================================
 
 const PICKS_OPEN_DATE = new Date('2026-04-13T05:00:00Z'); // April 13 1am EST = 5am UTC
-const PICKS_LOCK_DATE = new Date('2026-04-15T23:00:00Z'); // April 15 7pm EST = 11pm UTC (first play-in game)
+const PICKS_LOCK_DATE = new Date('2026-04-14T23:30:00Z'); // April 14 7:30pm EST = 11:30pm UTC (first play-in game)
 
 function renderCountdown() {
   const now = new Date();
@@ -300,7 +300,7 @@ function renderCountdown() {
   // Picks are open — count down to lock
   if (now < PICKS_LOCK_DATE) {
     const diff = PICKS_LOCK_DATE - now;
-    return renderCountdownMarkup(diff, 'Make your picks before the Play-In starts!', 'Picks lock April 15, 2026 at 7:00 PM EST');
+    return renderCountdownMarkup(diff, 'Make your picks before the Play-In starts!', 'Picks lock Tuesday April 14 at 7:30 PM EST');
   }
 
   return '';
