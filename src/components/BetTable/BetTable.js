@@ -153,15 +153,13 @@ export function renderBetActionModal() {
   }
 
   return `
-    <div class="modal-overlay js-close-bet-modal">
-      <div class="modal new-bet-modal bet-modal">
-        <div class="new-bet-modal__header">
-          <button class="new-bet-modal__close js-close-bet-modal-btn">&times;</button>
-          <span class="new-bet-modal__icon">${headerIcon}</span>
-          <h2 class="new-bet-modal__title">${headerTitle}</h2>
-          <p class="new-bet-modal__subtitle">${headerSubtitle}</p>
+    <div class="app-modal-overlay js-close-bet-modal">
+      <div class="app-modal bet-modal">
+        <div class="app-modal__header">
+          <h2 class="app-modal__title">${headerTitle}</h2>
+          <button class="app-modal__close js-close-bet-modal-btn">&times;</button>
         </div>
-        <div class="bet-modal__body">
+        <div class="app-modal__body bet-modal__body">
           ${isLoading ? `
             <div class="bet-modal__loading">
               <div class="loading__spinner loading__spinner--sm"></div>

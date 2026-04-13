@@ -22,20 +22,23 @@ export function renderBracketConfirmModal() {
   const count = Object.keys(bracketStagedPicks).length;
 
   return `
-    <div class="bracket-confirm-overlay">
-      <div class="bracket-confirm">
-        <button class="new-bet-modal__close js-bracket-cancel-save">&times;</button>
-        <div class="bracket-confirm__icon">&#127936;</div>
-        <h3 class="bracket-confirm__title">Save your picks?</h3>
-        <p class="bracket-confirm__text">
-          You're about to save <strong>${count} pick${count > 1 ? 's' : ''}</strong>.
-          You can edit your picks until <strong>Tuesday April 14 at 7:30 PM EST</strong>.
-          After that, all picks are locked — even incomplete brackets.
-        </p>
-        <div class="bracket-confirm__countdown" id="confirmCountdown" data-target="${PICKS_LOCK_DATE.toISOString()}"></div>
-        <div class="bracket-confirm__actions">
-          <button class="btn btn--secondary js-bracket-cancel-save">Go Back</button>
-          <button class="btn btn--primary js-bracket-confirm-save">Save Picks</button>
+    <div class="app-modal-overlay">
+      <div class="app-modal bracket-confirm">
+        <div class="app-modal__header">
+          <h2 class="app-modal__title">Save your picks?</h2>
+          <button class="app-modal__close js-bracket-cancel-save">&times;</button>
+        </div>
+        <div class="app-modal__body" style="text-align: center;">
+          <p class="bracket-confirm__text">
+            You're about to save <strong>${count} pick${count > 1 ? 's' : ''}</strong>.
+            You can edit your picks until <strong>Tuesday April 14 at 7:30 PM EST</strong>.
+            After that, all picks are locked — even incomplete brackets.
+          </p>
+          <div class="bracket-confirm__countdown" id="confirmCountdown" data-target="${PICKS_LOCK_DATE.toISOString()}"></div>
+          <div class="bracket-confirm__actions">
+            <button class="btn btn--secondary js-bracket-cancel-save">Go Back</button>
+            <button class="btn btn--primary js-bracket-confirm-save">Save Picks</button>
+          </div>
         </div>
       </div>
     </div>
@@ -596,61 +599,61 @@ export function renderBracketHowModal() {
   if (!showBracketHowModal) return '';
 
   return `
-    <div class="bracket-confirm-overlay js-close-how-modal">
-      <div class="how-modal">
-        <div class="how-modal__header">
-          <button class="new-bet-modal__close js-close-how-modal-btn">&times;</button>
-          <span class="how-modal__trophy">&#127942;</span>
-          <h3 class="how-modal__title">How It Works</h3>
-          <p class="how-modal__subtitle">Predict the NBA Playoffs and win the pot!</p>
+    <div class="app-modal-overlay js-close-how-modal">
+      <div class="app-modal">
+        <div class="app-modal__header">
+          <h2 class="app-modal__title">How It Works</h2>
+          <button class="app-modal__close js-close-how-modal-btn">&times;</button>
         </div>
-        <div class="how-modal__steps">
-          <div class="how-modal__step">
-            <div class="how-modal__step-num">1</div>
-            <div class="how-modal__step-content">
-              <strong>Pick every winner</strong>
-              <span>Play-In, Round 1, Round 2, Conference Finals, and the Finals</span>
-            </div>
-          </div>
-          <div class="how-modal__step">
-            <div class="how-modal__step-num">2</div>
-            <div class="how-modal__step-content">
-              <strong>Predict the games</strong>
-              <span>How many games will each series go? (4-7)</span>
-            </div>
-          </div>
-          <div class="how-modal__step">
-            <div class="how-modal__step-num">3</div>
-            <div class="how-modal__step-content">
-              <strong>Earn points</strong>
-              <span>More points for later rounds. Bonus for predicting exact games.</span>
-            </div>
-          </div>
-          <div class="how-modal__scoring">
-            <div class="how-modal__scoring-title">Points per round</div>
-            <div class="how-modal__scoring-table">
-              <div class="how-modal__scoring-row how-modal__scoring-row--header">
-                <span>Round</span><span>Winner</span><span>Games</span>
+        <div class="app-modal__body">
+          <div class="how-modal__steps">
+            <div class="how-modal__step">
+              <div class="how-modal__step-num">1</div>
+              <div class="how-modal__step-content">
+                <strong>Pick every winner</strong>
+                <span>Play-In, Round 1, Round 2, Conference Finals, and the Finals</span>
               </div>
-              <div class="how-modal__scoring-row"><span>Play-In</span><span>1 pt</span><span>—</span></div>
-              <div class="how-modal__scoring-row"><span>Round 1</span><span>2 pts</span><span>1 pt</span></div>
-              <div class="how-modal__scoring-row"><span>Round 2</span><span>4 pts</span><span>2 pts</span></div>
-              <div class="how-modal__scoring-row"><span>Conf Finals</span><span>6 pts</span><span>3 pts</span></div>
-              <div class="how-modal__scoring-row how-modal__scoring-row--finals"><span>Finals</span><span>8 pts</span><span>4 pts</span></div>
+            </div>
+            <div class="how-modal__step">
+              <div class="how-modal__step-num">2</div>
+              <div class="how-modal__step-content">
+                <strong>Predict the games</strong>
+                <span>How many games will each series go? (4-7)</span>
+              </div>
+            </div>
+            <div class="how-modal__step">
+              <div class="how-modal__step-num">3</div>
+              <div class="how-modal__step-content">
+                <strong>Earn points</strong>
+                <span>More points for later rounds. Bonus for predicting exact games.</span>
+              </div>
+            </div>
+            <div class="how-modal__scoring">
+              <div class="how-modal__scoring-title">Points per round</div>
+              <div class="how-modal__scoring-table">
+                <div class="how-modal__scoring-row how-modal__scoring-row--header">
+                  <span>Round</span><span>Winner</span><span>Games</span>
+                </div>
+                <div class="how-modal__scoring-row"><span>Play-In</span><span>1 pt</span><span>—</span></div>
+                <div class="how-modal__scoring-row"><span>Round 1</span><span>2 pts</span><span>1 pt</span></div>
+                <div class="how-modal__scoring-row"><span>Round 2</span><span>4 pts</span><span>2 pts</span></div>
+                <div class="how-modal__scoring-row"><span>Conf Finals</span><span>6 pts</span><span>3 pts</span></div>
+                <div class="how-modal__scoring-row how-modal__scoring-row--finals"><span>Finals</span><span>8 pts</span><span>4 pts</span></div>
+              </div>
+            </div>
+            <div class="how-modal__step">
+              <div class="how-modal__step-num">4</div>
+              <div class="how-modal__step-content">
+                <strong>Most points wins</strong>
+                <span>The player with the most points at the end takes the pot. In case of a tie, the pot is split evenly.</span>
+              </div>
             </div>
           </div>
-          <div class="how-modal__step">
-            <div class="how-modal__step-num">4</div>
-            <div class="how-modal__step-content">
-              <strong>Most points wins</strong>
-              <span>The player with the most points at the end takes the pot. In case of a tie, the pot is split evenly.</span>
-            </div>
+          <div class="how-modal__warning">
+            Picks are not editable once the first Play-In game starts.
           </div>
+          <button class="btn btn--primary how-modal__btn js-close-how-modal-btn">Let's Go!</button>
         </div>
-        <div class="how-modal__warning">
-          Picks are not editable once the first Play-In game starts.
-        </div>
-        <button class="btn btn--primary how-modal__btn js-close-how-modal-btn">Let's Go!</button>
       </div>
     </div>
   `;

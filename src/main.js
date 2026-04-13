@@ -883,12 +883,12 @@ document.addEventListener('click', (e) => {
     setState({ showBracketHowModal: true });
     return;
   }
-  if (e.target.closest('.js-close-how-modal-btn') || e.target.matches('.js-close-how-modal')) {
+  if (e.target.closest('.js-close-how-modal-btn')) {
     setState({ showBracketHowModal: false });
     return;
   }
   // Close any bracket overlay on backdrop click
-  if (e.target.matches('.bracket-confirm-overlay')) {
+  if (e.target.matches('.app-modal-overlay')) {
     setState({ showBracketConfirmModal: false, showBracketHowModal: false });
     return;
   }
