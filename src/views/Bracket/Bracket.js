@@ -598,6 +598,7 @@ export function renderBracketHowModal() {
     <div class="bracket-confirm-overlay js-close-how-modal">
       <div class="how-modal">
         <div class="how-modal__header">
+          <button class="new-bet-modal__close js-close-how-modal-btn">&times;</button>
           <span class="how-modal__trophy">&#127942;</span>
           <h3 class="how-modal__title">How It Works</h3>
           <p class="how-modal__subtitle">Predict the NBA Playoffs and win the pot!</p>
