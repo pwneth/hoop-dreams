@@ -851,6 +851,10 @@ document.addEventListener('click', (e) => {
 
 // Onboarding modal save
 document.addEventListener('click', (e) => {
+  if (e.target.id === 'closeOnboardingBtn') {
+    setState({ showOnboardingModal: false });
+    return;
+  }
   if (e.target.id === 'onboardSaveBtn') {
     const name = document.getElementById('onboardName')?.value.trim();
     const paypal = document.getElementById('onboardPaypal')?.value.trim();

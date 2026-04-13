@@ -172,32 +172,15 @@ export function renderMobileNav() {
       </div>
       <div class="mobile-nav__links">
         <button class="mobile-nav__link ${currentView === 'dashboard' ? 'mobile-nav__link--active' : ''}" data-path="/">
-          <span class="mobile-nav__link-icon">&#127942;</span>
-          <span>Bets</span>
-          ${badgeHtml}
+          Bets ${badgeHtml}
         </button>
         <button class="mobile-nav__link ${currentView === 'bracket' ? 'mobile-nav__link--active' : ''}" data-path="/bracket">
-          <span class="mobile-nav__link-icon">&#127936;</span>
-          <span>Bracket</span>
+          Bracket
         </button>
-      </div>
-      <div class="mobile-nav__divider"></div>
-      <div class="mobile-nav__links">
-        <button class="mobile-nav__link js-settings-btn">
-          <span class="mobile-nav__link-icon">&#9881;&#65039;</span>
-          <span>Settings</span>
-        </button>
-        <button class="mobile-nav__link js-change-pw-btn">
-          <span class="mobile-nav__link-icon">&#128272;</span>
-          <span>Change Password</span>
-        </button>
-        <button class="mobile-nav__link js-theme-toggle">
-          <span class="mobile-nav__link-icon">${isDarkMode ? '☀️' : '🌙'}</span>
-          <span>${isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-        </button>
-      </div>
-      <div class="mobile-nav__footer">
-        <button class="mobile-nav__logout js-logout-btn">Log Out</button>
+        <button class="mobile-nav__link js-settings-btn">Settings</button>
+        <button class="mobile-nav__link js-change-pw-btn">Change Password</button>
+        <button class="mobile-nav__link js-theme-toggle">${isDarkMode ? 'Light Mode' : 'Dark Mode'}</button>
+        <button class="mobile-nav__link mobile-nav__link--logout js-logout-btn">Log Out</button>
       </div>
     </nav>
   `;

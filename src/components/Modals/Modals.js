@@ -79,6 +79,7 @@ export function renderOnboardingModal() {
     <div class="modal-overlay" id="onboardingOverlay">
       <div class="modal new-bet-modal">
         <div class="new-bet-modal__header">
+          <button class="new-bet-modal__close" id="closeOnboardingBtn">&times;</button>
           <span class="new-bet-modal__icon">&#127881;</span>
           <h2 class="new-bet-modal__title">Welcome to HD Bets!</h2>
           <p class="new-bet-modal__subtitle">Set up your profile to get started</p>
