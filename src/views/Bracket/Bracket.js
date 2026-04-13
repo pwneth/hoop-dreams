@@ -286,7 +286,7 @@ function getMatchups() {
 // =============================================
 
 const PICKS_OPEN_DATE = new Date('2026-04-13T05:00:00Z'); // April 13 1am EST = 5am UTC
-const PICKS_LOCK_DATE = new Date('2026-04-12T23:30:00Z'); // April 14 7:30pm EST = 11:30pm UTC (first play-in game)
+const PICKS_LOCK_DATE = new Date('2026-04-14T23:30:00Z'); // April 14 7:30pm EST = 11:30pm UTC (first play-in game)
 
 function renderCountdown() {
   const now = new Date();
