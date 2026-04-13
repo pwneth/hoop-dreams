@@ -3860,7 +3860,6 @@ h4 {
 }
 
 .bracket-container__inner {
-  display: inline-block;
   padding: var(--space-sm);
 }
 
@@ -5496,7 +5495,10 @@ h4 {
   .bracket-container {
     margin-left: calc(-1 * var(--space-sm));
     margin-right: calc(-1 * var(--space-sm));
-    padding: var(--space-sm);
+  }
+
+  .bracket-container__inner {
+    display: inline-block;
   }
 
 
