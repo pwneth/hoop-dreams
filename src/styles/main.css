@@ -4744,118 +4744,174 @@ h4 {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  padding: var(--space-lg);
+  overflow: hidden;
   margin-bottom: var(--space-xl);
 }
 
 .bracket-scoreboard__header {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-md);
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
   flex-wrap: wrap;
 }
 
 .bracket-scoreboard__title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--accent-primary);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
-.bracket-scoreboard__pot {
+.bracket-scoreboard__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.bracket-scoreboard__stat {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
 }
 
-.bracket-scoreboard__pot-label {
-  font-size: 0.8rem;
+.bracket-scoreboard__stat-label {
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.bracket-scoreboard__pot-value {
-  font-size: 1.1rem;
+.bracket-scoreboard__stat-value {
+  font-size: 0.9rem;
   font-weight: 800;
+  color: var(--text-primary);
+}
+
+.bracket-scoreboard__stat-value--pot {
   color: var(--status-active);
 }
 
-.bracket-scoreboard__buyin {
+.bracket-scoreboard__buyin-edit {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  margin-left: auto;
-}
-
-.bracket-scoreboard__buyin-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
 }
 
 .bracket-scoreboard__buyin-input {
-  width: 80px;
+  width: 70px;
   padding: 4px 8px !important;
   font-size: 0.85rem !important;
 }
 
-.bracket-scoreboard__table {
+.bracket-scoreboard__list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
-.bracket-scoreboard__row {
-  display: grid;
-  grid-template-columns: 30px 1fr 50px 50px 50px;
-  gap: var(--space-sm);
+.bracket-scoreboard__item {
+  display: flex;
   align-items: center;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-}
-
-.bracket-scoreboard__row--header {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  padding-bottom: var(--space-xs);
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.bracket-scoreboard__row--first {
-  background: var(--accent-glow);
+.bracket-scoreboard__item:last-child {
+  border-bottom: none;
 }
 
-.bracket-scoreboard__cell {
-  font-size: 0.85rem;
+.bracket-scoreboard__item--leader {
+  background: linear-gradient(90deg, rgba(96, 1, 210, 0.06) 0%, transparent 100%);
+}
+
+.bracket-scoreboard__rank {
+  width: 28px;
   text-align: center;
+  flex-shrink: 0;
 }
 
-.bracket-scoreboard__cell--rank {
+.bracket-scoreboard__medal {
+  font-size: 1.1rem;
+}
+
+.bracket-scoreboard__rank-num {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.bracket-scoreboard__player {
+  min-width: 0;
+}
+
+.bracket-scoreboard__score {
+  flex-shrink: 0;
+  text-align: right;
+  margin-left: auto;
+}
+
+.bracket-scoreboard__points {
+  font-size: 1.05rem;
   font-weight: 800;
   color: var(--accent-primary);
 }
 
-.bracket-scoreboard__cell--name {
-  text-align: left;
+.bracket-scoreboard__points-label {
+  font-size: 0.65rem;
   font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 2px;
 }
 
-.bracket-scoreboard__cell--pts {
-  font-weight: 800;
-  color: var(--accent-primary);
-  font-size: 1rem;
+.bracket-scoreboard__details {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 110px;
+  justify-content: flex-end;
+}
+
+.bracket-scoreboard__detail {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.bracket-scoreboard__detail-sep {
+  color: var(--text-muted);
+  font-size: 0.6rem;
 }
 
 .bracket-scoreboard__empty {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.85rem;
-  padding: var(--space-md);
+  padding: var(--space-lg);
+}
+
+@media (max-width: 768px) {
+  .bracket-scoreboard__header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .bracket-scoreboard__item {
+    padding: var(--space-sm) var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .bracket-scoreboard__details {
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 36px;
+  }
+
+  .bracket-scoreboard__meta {
+    gap: var(--space-md);
+  }
 }
 
 /* --- User Pick Games Badge --- */

@@ -1,6 +1,6 @@
 import { getState, setState } from '../../lib/store/store.js';
 import { renderLoading } from '../../components/Loader/Loader.js';
-import { formatCurrency } from '../../lib/utils/utils.js';
+import { formatCurrency, renderUserTag } from '../../lib/utils/utils.js';
 import { NBA_TEAMS, getTeamLogo, getTeamByAbbreviation } from '../../data/nbaTeams.js';
 
 const SAVING_MESSAGES = [
@@ -423,7 +423,7 @@ export function renderBracketView() {
       ${renderScoreboard(bracketScores, bracketBuyIn, pot, isAdmin)}
 
       <!-- Sticky Bottom Bar: Progress + Save -->
-      ${renderBottomBar(isAdmin, bracketSaving, hasChanges, stagedCount, totalPickedCount, totalMatchups, remainingCount, roundProgress)}
+      ${new Date() < PICKS_LOCK_DATE || isAdmin ? renderBottomBar(isAdmin, bracketSaving, hasChanges, stagedCount, totalPickedCount, totalMatchups, remainingCount, roundProgress) : ''}
 
       <!-- Play-In Tournament -->
       <div class="bracket-playin">
@@ -620,45 +620,53 @@ export function renderBracketHowModal() {
 // =============================================
 
 function renderScoreboard(scores, buyIn, pot, isAdmin) {
+  const rankEmojis = ['&#129351;', '&#129352;', '&#129353;'];
+  const state = getState();
+
+  const displayScores = scores;
+
   return `
     <div class="bracket-scoreboard">
       <div class="bracket-scoreboard__header">
         <h3 class="bracket-scoreboard__title">Standings</h3>
-        <div class="bracket-scoreboard__pot">
-          <span class="bracket-scoreboard__pot-label">Pot</span>
-          <span class="bracket-scoreboard__pot-value">${formatCurrency(pot)}</span>
+        <div class="bracket-scoreboard__meta">
+          <div class="bracket-scoreboard__stat">
+            <span class="bracket-scoreboard__stat-label">Pot</span>
+            <span class="bracket-scoreboard__stat-value bracket-scoreboard__stat-value--pot">${formatCurrency(pot)}</span>
+          </div>
+          <div class="bracket-scoreboard__stat">
+            <span class="bracket-scoreboard__stat-label">Buy-in</span>
+            ${isAdmin ? `
+              <div class="bracket-scoreboard__buyin-edit">
+                <input class="form-input bracket-scoreboard__buyin-input" type="number" id="bracketBuyInInput" value="${buyIn}" min="0" step="1" />
+                <button class="btn btn--primary bracket-admin__btn js-set-buyin">Set</button>
+              </div>
+            ` : `
+              <span class="bracket-scoreboard__stat-value">${formatCurrency(buyIn)}</span>
+            `}
+          </div>
         </div>
-        ${isAdmin ? `
-          <div class="bracket-scoreboard__buyin">
-            <label class="bracket-scoreboard__buyin-label">Buy-in:</label>
-            <input class="form-input bracket-scoreboard__buyin-input" type="number" id="bracketBuyInInput" value="${buyIn}" min="0" step="1" />
-            <button class="btn btn--primary bracket-admin__btn js-set-buyin">Set</button>
-          </div>
-        ` : `
-          <div class="bracket-scoreboard__buyin">
-            <span class="bracket-scoreboard__buyin-label">Buy-in:</span>
-            <span class="bracket-scoreboard__pot-value">${formatCurrency(buyIn)}</span>
-          </div>
-        `}
       </div>
-      ${scores.length > 0 ? `
-        <div class="bracket-scoreboard__table">
-          <div class="bracket-scoreboard__row bracket-scoreboard__row--header">
-            <span class="bracket-scoreboard__cell">#</span>
-            <span class="bracket-scoreboard__cell bracket-scoreboard__cell--name">Player</span>
-            <span class="bracket-scoreboard__cell">Pts</span>
-            <span class="bracket-scoreboard__cell">Picks</span>
-            <span class="bracket-scoreboard__cell">Games</span>
-          </div>
-          ${scores.map((s, i) => `
-            <div class="bracket-scoreboard__row ${i === 0 ? 'bracket-scoreboard__row--first' : ''}">
-              <span class="bracket-scoreboard__cell bracket-scoreboard__cell--rank">${i + 1}</span>
-              <span class="bracket-scoreboard__cell bracket-scoreboard__cell--name">${s.username}</span>
-              <span class="bracket-scoreboard__cell bracket-scoreboard__cell--pts">${s.points}</span>
-              <span class="bracket-scoreboard__cell">${s.correctPicks}</span>
-              <span class="bracket-scoreboard__cell">${s.correctGames}</span>
-            </div>
-          `).join('')}
+      ${displayScores.length > 0 ? `
+        <div class="bracket-scoreboard__list">
+          ${displayScores.map((s, i) => {
+            const rank = i + 1;
+            const rankHtml = rank <= 3 ? `<span class="bracket-scoreboard__medal">${rankEmojis[i]}</span>` : `<span class="bracket-scoreboard__rank-num">${rank}</span>`;
+            return `
+              <div class="bracket-scoreboard__item ${rank === 1 ? 'bracket-scoreboard__item--leader' : ''}">
+                <div class="bracket-scoreboard__rank">${rankHtml}</div>
+                <div class="bracket-scoreboard__player">${renderUserTag(s.username, state)}</div>
+                <div class="bracket-scoreboard__score">
+                  <span class="bracket-scoreboard__points">${s.points}<span class="bracket-scoreboard__points-label">pts</span></span>
+                </div>
+                <div class="bracket-scoreboard__details">
+                  <span class="bracket-scoreboard__detail" data-tooltip="Correct winner picks">${s.correctPicks} picks</span>
+                  <span class="bracket-scoreboard__detail-sep">·</span>
+                  <span class="bracket-scoreboard__detail" data-tooltip="Correct series length">${s.correctGames} games</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       ` : '<p class="bracket-scoreboard__empty">No picks submitted yet</p>'}
     </div>
@@ -774,7 +782,8 @@ function renderMatchupCard(matchup) {
   const gamesWrong = pickedGames && isCompleted && matchup.gamesPlayed && pickedGames !== matchup.gamesPlayed;
   const gamesClass = gamesCorrect ? 'bracket-team__games--correct' : (gamesWrong ? 'bracket-team__games--wrong' : '');
 
-  const canPick = !isAdmin && hasTeams && !isCompleted && !isSaved;
+  const picksLocked = new Date() >= PICKS_LOCK_DATE;
+  const canPick = !isAdmin && hasTeams && !isCompleted && !isSaved && !picksLocked;
   const pendingTop = isPending && bracketPendingPick.pick === 'top';
   const pendingBottom = isPending && bracketPendingPick.pick === 'bottom';
 
