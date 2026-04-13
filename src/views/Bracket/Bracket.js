@@ -23,19 +23,19 @@ export function renderBracketConfirmModal() {
 
   return `
     <div class="app-modal-overlay">
-      <div class="app-modal bracket-confirm">
+      <div class="app-modal">
         <div class="app-modal__header">
           <h2 class="app-modal__title">Save your picks?</h2>
           <button class="app-modal__close js-bracket-cancel-save">&times;</button>
         </div>
-        <div class="app-modal__body" style="text-align: center;">
-          <p class="bracket-confirm__text">
+        <div class="app-modal__body" style="padding: var(--space-lg); text-align: center;">
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: var(--space-md);">
             You're about to save <strong>${count} pick${count > 1 ? 's' : ''}</strong>.
             You can edit your picks until <strong>Tuesday April 14 at 7:30 PM EST</strong>.
             After that, all picks are locked — even incomplete brackets.
           </p>
-          <div class="bracket-confirm__countdown" id="confirmCountdown" data-target="${PICKS_LOCK_DATE.toISOString()}"></div>
-          <div class="bracket-confirm__actions">
+          <div class="bracket-confirm__countdown" id="confirmCountdown" data-target="${PICKS_LOCK_DATE.toISOString()}" style="margin-bottom: var(--space-lg);"></div>
+          <div style="display: flex; gap: var(--space-md); justify-content: center;">
             <button class="btn btn--secondary js-bracket-cancel-save">Go Back</button>
             <button class="btn btn--primary js-bracket-confirm-save">Save Picks</button>
           </div>
@@ -442,7 +442,7 @@ export function renderBracketView() {
       </section>
 
       <!-- Sticky Bottom Bar: Progress + Save -->
-      ${new Date() < PICKS_LOCK_DATE || isAdmin ? renderBottomBar(isAdmin, bracketSaving, hasChanges, stagedCount, totalPickedCount, totalMatchups, remainingCount, roundProgress) : ''}
+      ${currentUser && (new Date() < PICKS_LOCK_DATE || isAdmin) ? renderBottomBar(isAdmin, bracketSaving, hasChanges, stagedCount, totalPickedCount, totalMatchups, remainingCount, roundProgress) : ''}
 
       <!-- Viewing other user's bracket -->
       ${isViewingOther ? `
@@ -843,7 +843,7 @@ function renderMatchupCard(matchup) {
   const gamesClass = gamesCorrect ? 'bracket-team__games--correct' : (gamesWrong ? 'bracket-team__games--wrong' : '');
 
   const picksLocked = new Date() >= PICKS_LOCK_DATE;
-  const canPick = !isAdmin && !isViewingOther && hasTeams && !isCompleted && !isSaved && !picksLocked;
+  const canPick = currentUser && !isAdmin && !isViewingOther && hasTeams && !isCompleted && !isSaved && !picksLocked;
   const pendingTop = isPending && bracketPendingPick.pick === 'top';
   const pendingBottom = isPending && bracketPendingPick.pick === 'bottom';
 
