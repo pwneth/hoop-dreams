@@ -334,14 +334,12 @@ function attachEventListeners() {
 
   document.querySelectorAll('.js-change-pw-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      closeMobileNav();
       setState({ showChangePasswordModal: true });
     });
   });
 
   document.querySelectorAll('.js-settings-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      closeMobileNav();
       setState({ showSettingsModal: true });
     });
   });
