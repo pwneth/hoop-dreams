@@ -457,10 +457,13 @@ export function renderBracketView() {
               const isOwnBracket = !bracketViewingUser || bracketViewingUser === currentUser.username;
 
               // User selector dropdown
+              const viewingColor = getAvatarColor(viewingName);
+              const viewingAvatar = (state.allAvatars || {})[viewingName] || '';
               const dropdownHtml = viewableUsers.length > 0 ? `
                 <div class="user-select bracket-user-select" id="bracketUserSelect">
                   <div class="user-select__trigger" id="bracketUserTrigger">
-                    <span class="bracket-viewing-text">Viewing <strong>${viewingName}</strong></span>
+                    <span class="bracket-viewing-text">Viewing</span>
+                    <span class="user-tag" style="--tag-color:${viewingColor.bg}"><span class="user-tag__icon" ${viewingAvatar ? `style="background-image:url('${viewingAvatar}')"` : ''}>${viewingName.charAt(0)}</span>${viewingName}</span>
                     <span class="user-select__arrow"></span>
                   </div>
                   <div class="user-select__dropdown">
@@ -476,7 +479,7 @@ export function renderBracketView() {
                     }).join('')}
                   </div>
                 </div>
-              ` : `<span class="bracket-viewing-text">Viewing <strong>${viewingName}</strong></span>`;
+              ` : `<span class="bracket-viewing-text">Viewing</span> <span class="user-tag" style="--tag-color:${viewingColor.bg}"><span class="user-tag__icon" ${viewingAvatar ? `style="background-image:url('${viewingAvatar}')"` : ''}>${viewingName.charAt(0)}</span>${viewingName}</span>`;
 
               // Edit link (only for own bracket, when all picks saved, before deadline)
               const editHtml = isOwnBracket && !picksLocked && allPicked && !hasStagedPicks
